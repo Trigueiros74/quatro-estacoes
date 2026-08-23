@@ -1,0 +1,19 @@
+*.class
+*.jar
+po-uilib
+
+# Ficheiros de estado gravados pela aplicação durante os testes
+*.dat
+
+# Artefactos do sistema operativo
+.DS_Store
+*:Zone.Identifier
+
+# Directório de trabalho do run-tests.sh
+.test-run/
+
+# Saídas produzidas pelos testes
+*.outhyp
+
+# Definições locais de ferramentas
+.claude/
