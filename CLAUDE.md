@@ -27,12 +27,13 @@ Plano de jogo completo:
 
 ## Estado actual
 
-Um commit. `hva-core` e `hva-app` importados, a compilar sem avisos, **213/213
-testes automáticos a passar**.
+`hva-core` e `hva-app` importados, a compilar sem avisos, **213/213 testes
+automáticos a passar**. Fase 0 feita: o *build* é Gradle multi-módulo.
 
 ```console
-$ make            # build (herdado; a substituir por Gradle na fase 0)
-$ ./run-tests.sh  # 213 testes; aceita padrão, ex.: ./run-tests.sh 'A-19-*'
+$ ./gradlew build                    # compilar tudo e correr os 213 testes
+$ ./gradlew test -Ptests='A-19-*'    # só os casos que interessam
+$ make && ./run-tests.sh             # build herdado, segunda opinião independente
 ```
 
 `po-uilib` está no `.gitignore` mas existe localmente em `po-uilib/po-uilib.jar`
@@ -151,25 +152,30 @@ alteração passaria a ser uma dança entre dois repositórios).
 
 | | Fase | Estado |
 |:---:|:---|:---|
-| 00 | Gradle multi-módulo, 213 testes em `./gradlew test` | **a seguir** |
-| 01 | *Spike* do TeaVM — chamar `getGlobalSatisfaction()` do browser | *gate*: 1 semana, senão cair para Spring Boot |
+| 00 | Gradle multi-módulo, 213 testes em `./gradlew test` | **feita** |
+| 01 | *Spike* do TeaVM — chamar `getGlobalSatisfaction()` do browser | **a seguir** — *gate*: 1 semana, senão cair para Spring Boot |
 | 02 | Um cenário jogável: arrastar animais, satisfação ao vivo, **publicar** | |
 | 03 | Turnos e estações | |
 | 04 | Funcionários e vacinação | |
 | 05 | Campanha, eventos, saves | |
 | 06 | Polimento | |
 
-### Fase 0 em concreto
+### O que a fase 0 deixou montado
 
-* `settings.gradle.kts` multi-módulo; `hva-app` depende de `hva-core`.
-* `po-uilib.jar` como dependência local (`libs/`).
-* Teste JUnit que percorre `tests/auto-tests/`, corre a `App` com `-Din`/`-Dout`
-  e compara com o esperado. A comparação usada na avaliação é
-  `diff -iwub -B` sobre a saída com espaços colapsados — o `run-tests.sh`
-  replica-a e serve de referência.
-
-Não avançar para a fase 1 sem os 213 testes verdes no Gradle: são a rede de
-segurança para mexer no núcleo.
+* Gradle 9.7.1 pelo *wrapper* (`./gradlew`); `hva-app` depende de `hva-core`.
+* `options.release = 17` em vez de uma *toolchain*: qualquer JDK 17 ou posterior
+  constrói o projecto, sem descarregar mais nada.
+* `-Xlint:all -Werror`, menos `serial` e `try` — os dois são falsos positivos
+  conhecidos e estão comentados no `build.gradle.kts`.
+* `po-uilib.jar` procurado por esta ordem: `libs/`, `po-uilib/`, `/usr/share/java`.
+* `hva-app/test/hva/app/AutoTests.java` percorre `tests/auto-tests/` e corre cada
+  caso num processo próprio, com `-Din`/`-Dout`. **Os casos partilham o
+  directório de trabalho e correm por ordem de nome** — há testes que abrem
+  ficheiros de estado gravados por testes anteriores (o `A-01-14` abre o
+  `ap01.dat` que o `A-01-13` gravou), pelo que não podem ser paralelizados nem
+  reordenados.
+* O `make` e o `run-tests.sh` ficaram, como segunda opinião independente sobre o
+  mesmo corpo de testes.
 
 ---
 
@@ -179,4 +185,4 @@ segurança para mexer no núcleo.
 * Repositórios **sem descrição** no GitHub.
 * Nomes de repositório sem espaços (o `Projeto---PO` ficou assim por causa
   disso).
-* Correr `./run-tests.sh` a cada refactorização do núcleo.
+* Correr `./gradlew test` a cada refactorização do núcleo.

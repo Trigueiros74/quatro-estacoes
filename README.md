@@ -92,8 +92,8 @@ Se o TeaVM resistir mais de uma semana, a alternativa é Spring Boot + REST.
 
 | | Fase | Estado |
 |:---:|:---|:---|
-| 00 | Migrar para Gradle multi-módulo, 213 testes em `./gradlew test` | 🔨 a decorrer |
-| 01 | *Spike* do TeaVM — chamar `getGlobalSatisfaction()` do browser | |
+| 00 | Migrar para Gradle multi-módulo, 213 testes em `./gradlew test` | ✅ feita |
+| 01 | *Spike* do TeaVM — chamar `getGlobalSatisfaction()` do browser | 🔨 a seguir |
 | 02 | Um cenário jogável: arrastar animais, satisfação ao vivo, **publicar** | |
 | 03 | Turnos e estações | |
 | 04 | Funcionários e vacinação | |
@@ -104,13 +104,28 @@ Se o TeaVM resistir mais de uma semana, a alternativa é Spring Boot + REST.
 
 ## 🚀 Compilação e testes
 
-Enquanto a fase 0 não estiver feita, o *build* é o herdado do projecto original.
-É necessária a biblioteca **po-uilib**, em `po-uilib/po-uilib.jar` ou em
-`/usr/share/java`.
+Basta um JDK 17 ou posterior — o *wrapper* trata do resto. É necessária a
+biblioteca **po-uilib**, em `libs/po-uilib.jar`, em `po-uilib/po-uilib.jar` ou
+em `/usr/share/java`.
 
 ```console
-$ make
-$ ./run-tests.sh
+$ ./gradlew build              # compilar tudo e correr os 213 testes
+$ ./gradlew test               # só os testes
+$ ./gradlew test -Ptests='A-19-*'   # só os casos que interessam
+```
+
+Os casos partilham um directório de trabalho e correm por ordem de nome, tal
+como no `run-tests.sh`: há testes que abrem ficheiros de estado gravados por
+testes anteriores. A comparação replica a da avaliação — `diff -iwub -B` sobre a
+saída com os espaços colapsados. Quando um caso falha, o relatório fica em
+`hva-app/build/reports/tests/test/index.html` e a saída obtida em
+`hva-app/build/auto-tests/`.
+
+O *build* herdado continua a funcionar e serve de segunda opinião independente
+sobre o mesmo corpo de testes:
+
+```console
+$ make && ./run-tests.sh
 ```
 
 ---

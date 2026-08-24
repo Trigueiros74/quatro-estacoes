@@ -2,6 +2,13 @@
 *.jar
 po-uilib
 
+# O wrapper do Gradle é a forma de construir o projecto: vai versionado.
+!gradle/wrapper/gradle-wrapper.jar
+
+# Artefactos do Gradle
+build/
+.gradle/
+
 # Ficheiros de estado gravados pela aplicação durante os testes
 *.dat
 
