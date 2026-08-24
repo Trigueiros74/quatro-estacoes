@@ -1,7 +1,13 @@
 # Quatro Estações — contexto do projecto
 
-Jogo de gestão por turnos construído sobre o núcleo Java de um projecto
-académico já concluído. **Cada turno é uma estação do ano.**
+Tradução visual e interactiva, dentro do browser, de um hotel veterinário
+escrito em Java para um projecto académico já concluído.
+
+O utilizador faz tudo o que a CLI original faz — criar espécies, alojar animais,
+plantar árvores, contratar tratadores e veterinários, registar e aplicar vacinas
+— mas a ver e a mexer: os animais estão desenhados, arrastam-se entre habitats,
+e cada acção devolve uma animação positiva ou negativa. **Cada turno é uma
+estação do ano.**
 
 Trabalhamos em **português (pt-PT)**.
 
@@ -44,8 +50,8 @@ $ make && ./run-tests.sh             # build herdado, segunda opinião independe
 hva-core/     Domínio: animais, habitats, árvores, funcionários, vacinas
 hva-app/      CLI de referência — é ela que mantém os 213 testes vivos
 tests/        213 casos de teste e saídas esperadas
-hva-game/     (a criar) Turnos, objectivos, eventos, pontuação
-hva-web/      (a criar) TeaVM + interface
+hva-web/      (a criar) TeaVM + interface: posições, desenho, arrastar, animações
+hva-game/     (a criar) Restrições: orçamento, capacidade, acções por turno, objectivos
 ```
 
 ---
@@ -56,15 +62,25 @@ hva-web/      (a criar) TeaVM + interface
 entre domínio e jogo é o que dá valor ao projecto; se ela cair, isto passa a ser
 mais um CRUD.
 
-Só duas adições ao núcleo estão previstas, porque pertencem mesmo ao domínio:
+Três adições ao núcleo estão previstas, porque pertencem mesmo ao domínio:
 
 1. **Remoções** — apagar animal, habitat, árvore, funcionário. O enunciado
    original nunca as pediu; uma interface vai querê-las.
 2. **`satisfactionIfMovedTo(animal, habitat)`** — pré-visualizar o ganho ou
    perda *antes* de largar o animal. É o que torna o jogo legível.
+3. **`importFrom(Reader)`** — extrair a análise do formato de importação do
+   `importFile(String)`, que fica como invólucro. O domínio aprende a ler de
+   outro sítio que não um ficheiro; é preciso porque o TeaVM não tem sistema de
+   ficheiros. Fase 2.
 
 Capacidade de habitats, orçamento, turnos, objectivos e eventos são regras de
 jogo: `hva-game`.
+
+**As posições também não vão para o núcleo.** Nada no domínio sabe onde as
+coisas estão — o `Habitat` tem uma área, que é um `int`, e o `Animal` não tem
+coordenadas nenhumas. Para desenhar, arrastar e animar é preciso guardar
+posições, e isso é matéria do `hva-web`. É puramente aditivo: não obriga a tocar
+no `hva-core`.
 
 ---
 
@@ -83,6 +99,17 @@ jogo: `hva-game`.
 * Excepções: o núcleo lança `*ExceptionCore` que transportam **apenas chaves**;
   cada comando traduz para subclasses de `CommandException`. O núcleo nunca
   constrói mensagens para o utilizador.
+* **Só dois sítios tocam o sistema de ficheiros:** o `Hotel.importFile` e o
+  `HotelManager` inteiro. Todo o resto é aritmética e colecções — é por isso que
+  o núcleo atravessa para o browser quase intacto.
+* **Não existe comando para criar uma espécie.** As espécies nascem por
+  acidente: o `DoRegisterAnimal` apanha a `UnknownSpeciesKeyExceptionCore`, pede
+  o nome e regista-a. O `Hotel.registerSpecies` já é público, portanto a
+  interface pode oferecer um controlo próprio sem mexer no núcleo.
+* `Hotel.nextSeason()` avança a estação **e** faz transitar todas as árvores
+  numa só chamada — mudam de ciclo biológico, o esforço de limpeza salta e a
+  satisfação dos tratadores cai. É a cascata mais visível do jogo, e já está
+  escrita.
 
 ### ⚠️ A armadilha da serialização
 
@@ -122,10 +149,38 @@ nunca desce (`log(idade+1)`).
 **Ciclo de turno:** observar → agir (acções limitadas) → avançar estação →
 pontuar.
 
-**Começar por cenários-puzzle, não por campanha.** «Seis animais, dois habitats,
-um turno: maximiza a satisfação.» Pequeno, resolve-se em dois minutos, mostra as
-fórmulas a funcionar e é partilhável por link. A campanha longa vem depois — ou
-nunca, se os puzzles forem bons.
+### O alvo: um sandbox de gestão, não um puzzle
+
+O jogador constrói o hotel — cria espécies, aloja animais, planta árvores,
+contrata pessoal, vacina — e vê as consequências. Não é uma sequência de níveis
+com posição inicial fixa.
+
+**A conta que torna isto viável.** A CLI tem 33 comandos, mas não são 33 ecrãs:
+
+| | |
+|:---|:---|
+| 5 comandos de navegação de menus | evaporam |
+| 13 comandos de consulta | **são a imagem**, não são botões |
+| 15 acções que mudam estado | precisam mesmo de controlos |
+
+Não é preciso um botão «listar animais» quando se vêem os animais. Metade da CLI
+desaparece dentro do desenho.
+
+**O que separa isto de um CRUD visual são as restrições, não o grafismo.**
+Orçamento, capacidade dos habitats, acções limitadas por turno, objectivos: sem
+elas, isto é um editor bonito com animações. É por isso que existe o `hva-game`
+— e é por isso que a regra de ouro é a regra de ouro.
+
+### A retroacção já tem sinal
+
+Não é preciso inventar «isto foi bom» ou «isto foi mau»:
+
+* **Depois da acção:** toda a acção mexe no `getGlobalSatisfaction()`. O delta
+  *é* o verde ou o vermelho.
+* **Antes da acção:** o `satisfactionIfMovedTo(animal, habitat)` acende cada
+  habitat enquanto se arrasta o animal, antes de o largar.
+* **Ao virar a estação:** o `nextSeason()` sozinho já muda todas as árvores de
+  ciclo biológico e derruba a satisfação dos tratadores.
 
 ---
 
@@ -135,8 +190,13 @@ nunca, se os puzzles forem bons.
 corre dentro do browser, sem servidor. Alojamento estático e resposta
 instantânea ao arrastar um animal.
 
-*Senão conhecido:* o TeaVM não suporta serialização Java. No *build* web
-guarda-se JSON no `localStorage`; a serialização fica só na CLI.
+**A interface não se escreve em Java.** O TeaVM leva o *domínio* para o browser e
+exporta-lhe uma API; o arrastar, as animações e o CSS escrevem-se em JS/TS a
+falar com essa API. O Java não desenha nada.
+
+*Senão conhecido:* o TeaVM não suporta serialização Java nem tem sistema de
+ficheiros. No *build* web guarda-se JSON no `localStorage`; a serialização e o
+`HotelManager` ficam só na CLI.
 
 *Alternativa se falhar:* Spring Boot + REST. Convencional, mas precisa de
 alojamento e cada acção é uma ida ao servidor — mau para a pré-visualização ao
@@ -153,12 +213,25 @@ alteração passaria a ser uma dança entre dois repositórios).
 | | Fase | Estado |
 |:---:|:---|:---|
 | 00 | Gradle multi-módulo, 213 testes em `./gradlew test` | **feita** |
-| 01 | *Spike* do TeaVM — chamar `getGlobalSatisfaction()` do browser | **a seguir** — *gate*: 1 semana, senão cair para Spring Boot |
-| 02 | Um cenário jogável: arrastar animais, satisfação ao vivo, **publicar** | |
-| 03 | Turnos e estações | |
-| 04 | Funcionários e vacinação | |
-| 05 | Campanha, eventos, saves | |
-| 06 | Polimento | |
+| 01 | *Spike* do TeaVM — hotel construído em código, `getGlobalSatisfaction()` no browser | **a seguir** — *gate*: 1 semana, senão cair para Spring Boot |
+| 02 | Primeira fatia do sandbox: habitats desenhados, animais arrastáveis, satisfação ao vivo, **publicar** | |
+| 03 | Estações: virar o ano e ver a cascata nas árvores | |
+| 04 | As 15 acções todas — espécies, árvores, pessoal, vacinas | |
+| 05 | Restrições (`hva-game`): orçamento, capacidade, acções por turno, objectivos | |
+| 06 | Guardar em `localStorage`, eventos, polimento | |
+
+A sequência é deliberada: o alvo é o sandbox completo, mas o *gate* do TeaVM
+vem primeiro. Se o núcleo não correr no browser, muda tudo — alojamento,
+latência, pré-visualização ao arrastar. Desenhar quinze ecrãs antes de saber
+isso seria trabalho a perder.
+
+### Fase 1 em concreto
+
+O *spike* mínimo **não precisa do `importFile`**: constrói-se o hotel em código
+(`registerSpecies`, `registerHabitat`, `registerAnimal`), chama-se
+`getGlobalSatisfaction()` e imprime-se no browser. Não toca em `java.io` nenhum
+e testa o que interessa — se as colecções ordenadas, os `enum`, os `stream` e o
+`Math.log` sobrevivem à travessia.
 
 ### O que a fase 0 deixou montado
 

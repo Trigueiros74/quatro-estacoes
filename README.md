@@ -2,7 +2,7 @@
 
 # 🦁 Quatro Estações
 
-**Jogo de gestão por turnos, construído sobre um domínio Java existente**
+**Um hotel veterinário Java, traduzido para uma página web onde se joga**
 
 ![Java](https://img.shields.io/badge/language-Java%2017-ED8B00?style=flat-square&logo=openjdk)
 ![Tests](https://img.shields.io/badge/n%C3%BAcleo-213%2F213-brightgreen?style=flat-square)
@@ -18,6 +18,11 @@ Gerimos um hotel veterinário: animais de várias espécies alojados em habitats
 com árvores, tratados por tratadores e veterinários. **Cada turno é uma estação
 do ano.** As árvores mudam de ciclo biológico, o esforço de limpeza sobe e
 desce, e a satisfação de todos é recalculada.
+
+Faz-se tudo o que a aplicação de consola original fazia — criar espécies, alojar
+animais, plantar árvores, contratar pessoal, vacinar — mas a ver e a mexer: os
+animais estão desenhados, arrastam-se entre habitats, e cada acção devolve uma
+animação positiva ou negativa.
 
 O jogo não inventa mecânicas — reutiliza as regras de um domínio que já existia:
 
@@ -59,8 +64,8 @@ alteração.
 .
 ├── hva-core/     Domínio: animais, habitats, árvores, funcionários, vacinas
 ├── hva-app/      CLI de referência — mantém os 213 testes vivos
-├── hva-game/     (fase 3) Turnos, objectivos, eventos, pontuação
-├── hva-web/      (fase 2) TeaVM + interface do jogo
+├── hva-web/      (fase 1) TeaVM + interface: desenho, arrastar, animações
+├── hva-game/     (fase 5) Restrições: orçamento, capacidade, acções por turno
 └── tests/        213 casos de teste e saídas esperadas
 ```
 
@@ -72,7 +77,11 @@ As únicas adições previstas ao núcleo, porque pertencem mesmo ao domínio:
 
 * remoções (apagar animal, habitat, árvore, funcionário);
 * `satisfactionIfMovedTo(animal, habitat)`, para pré-visualizar o ganho antes
-  de largar o animal.
+  de largar o animal;
+* `importFrom(Reader)`, porque no browser não há sistema de ficheiros.
+
+As **posições** dos animais e dos habitats também não vão para o núcleo: nada no
+domínio sabe onde as coisas estão, e desenhar é matéria do `hva-web`.
 
 ---
 
@@ -93,12 +102,12 @@ Se o TeaVM resistir mais de uma semana, a alternativa é Spring Boot + REST.
 | | Fase | Estado |
 |:---:|:---|:---|
 | 00 | Migrar para Gradle multi-módulo, 213 testes em `./gradlew test` | ✅ feita |
-| 01 | *Spike* do TeaVM — chamar `getGlobalSatisfaction()` do browser | 🔨 a seguir |
-| 02 | Um cenário jogável: arrastar animais, satisfação ao vivo, **publicar** | |
-| 03 | Turnos e estações | |
-| 04 | Funcionários e vacinação | |
-| 05 | Campanha, eventos, saves | |
-| 06 | Polimento | |
+| 01 | *Spike* do TeaVM — `getGlobalSatisfaction()` a correr no browser | 🔨 a seguir |
+| 02 | Habitats desenhados, animais arrastáveis, satisfação ao vivo, **publicar** | |
+| 03 | Estações: virar o ano e ver a cascata nas árvores | |
+| 04 | As acções todas — espécies, árvores, pessoal, vacinas | |
+| 05 | Restrições: orçamento, capacidade, acções por turno, objectivos | |
+| 06 | Guardar em `localStorage`, eventos, polimento | |
 
 ---
 
