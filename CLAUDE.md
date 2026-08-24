@@ -225,8 +225,28 @@ cálculo do dano das vacinas — que compara nomes caractere a caractere com um
 JavaScript. O ficheiro gerado tem 143 KB por ofuscar.
 
 **A interface não se escreve em Java.** O TeaVM leva o *domínio* para o browser e
-exporta-lhe uma API; o arrastar, as animações e o CSS escrevem-se em JS/TS a
-falar com essa API. O Java não desenha nada.
+exporta-lhe uma API; o desenho, as animações e o CSS escrevem-se em JS a falar
+com essa API. O Java não desenha nada.
+
+### O aspecto: um mundo em azulejos, visto de cima
+
+O alvo é um jogo à vista, não um painel de números — vista de cima, chão em
+azulejos, cercas, animais como *sprites* com balanço parado e caminhada ao
+mudarem de habitat, e a paleta a virar com a estação.
+
+* **O desenho é um `<canvas>`**, com os azulejos em 16 píxeis lógicos e escala
+  inteira (`imageSmoothingEnabled = false`), para os pixéis ficarem nítidos.
+* **A arte é escrita em código** — palete mais matriz de caracteres, um por
+  pixel. Cabe no ficheiro, não precisa de servidor, e é nossa: o que se aproveita
+  dos jogos do género é a linguagem visual, nunca os desenhos de ninguém.
+* **A área continua a ser verdade.** Era a largura do habitat; passa a ser o
+  número de azulejos do recinto. É a mesma grandeza que entra na fórmula da
+  satisfação (`área / população`), e é o que faz um habitat cheio parecer cheio.
+* **O mundo tem paleta própria e não segue o tema claro/escuro.** É uma cena
+  desenhada, como uma imagem; o resto da página é que se adapta.
+* *Por decidir:* se o jogador puder inventar espécies, não há *sprite* desenhado
+  para «Girafa». Ou uma lista de arquétipos à escolha, ou o bicho gerado a partir
+  da chave da espécie.
 
 *Senão conhecido:* o TeaVM não suporta serialização Java nem tem sistema de
 ficheiros. No *build* web guarda-se JSON no `localStorage`; a serialização e o
@@ -242,17 +262,22 @@ alteração passaria a ser uma dança entre dois repositórios).
 
 ---
 
-## Roteiro
+## Guia
 
 | | Fase | Estado |
 |:---:|:---|:---|
 | 00 | Gradle multi-módulo, 213 testes em `./gradlew test` | **feita** |
 | 01 | *Spike* do TeaVM — hotel construído em código, `getGlobalSatisfaction()` no browser | **feita** — o *gate* passou, o Spring Boot fica descartado |
-| 02 | Primeira fatia do sandbox: habitats desenhados, animais arrastáveis, satisfação ao vivo, **publicar** | **feita** |
-| 03 | Estações: virar o ano e ver a cascata nas árvores | **a seguir** |
-| 04 | As 15 acções todas — espécies, árvores, pessoal, vacinas | |
-| 05 | Restrições (`hva-game`): orçamento, capacidade, acções por turno, objectivos | |
+| 02 | Prova de que o domínio se comanda do browser: mover animais, ver a satisfação ao vivo, **publicar** | **feita** |
+| 03 | **O jogo a parecer um jogo** — mundo em azulejos, *sprites*, as acções todas | **a decorrer** |
+| 04 | O cenário deixa de ser fixo: `importFrom(Reader)` e cenários carregados de texto | |
+| 05 | Restrições (`hva-game`): saúde a valer pontos, orçamento, capacidade, acções por turno | |
 | 06 | Guardar em `localStorage`, eventos, polimento | |
+
+A fase 2 foi dada por fechada cedo demais. Cumpriu o que estava escrito, mas o
+que estava escrito era mais estreito do que o objectivo: **a página expõe 2 das
+12 acções do domínio** (mover animal e avançar estação) e o cenário está fixo no
+`Scenario.java`. O resto da fase 2 foi absorvido pela fase 3.
 
 A sequência é deliberada: o alvo é o sandbox completo, mas o *gate* do TeaVM
 vem primeiro. Se o núcleo não correr no browser, muda tudo — alojamento,
