@@ -253,13 +253,17 @@
   .habitat.worse .forecast { color: var(--loss); }
   .habitat.here .forecast { color: var(--muted); }
 
+  /*
+   * As fichas são posicionadas em píxeis, não em percentagem: a largura de uma
+   * ficha vem do nome do animal, e um nome comprido num habitat estreito
+   * sobrepunha-se ao vizinho. O guião mede-as e arruma-as por linhas.
+   */
   .animal {
     position: absolute;
-    left: var(--x);
-    top: var(--y);
     display: flex;
     align-items: center;
     gap: 0.4em;
+    max-width: calc(100% - 1.5rem);
     padding: 0.3em 0.75em 0.3em 0.35em;
     background: var(--surface);
     border: 1px solid var(--line);
@@ -270,6 +274,8 @@
     cursor: grab;
     user-select: none;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     transition: border-color 140ms ease, box-shadow 140ms ease;
   }
 
@@ -463,19 +469,59 @@
     function animais() { return hotel.getAnimalIds().split(","); }
     function habitats() { return hotel.getHabitatIds().split(","); }
 
-    /*
-     * Onde cada animal fica dentro do seu habitat. O domínio não sabe nem tem
-     * de saber: um habitat tem área, que é um número, e nada mais. As posições
-     * são matéria da interface e são calculadas aqui — uma grelha, para não se
-     * sobreporem, mais um desvio fixo por animal, para não parecerem alinhados.
+    /* Medidas do arrumo das fichas, em píxeis. */
+    var MARGEM = 12;      // afastamento das paredes do habitat
+    var TOPO = 30;        // espaço reservado ao nome e à área do habitat
+    var ESPACO = 6;       // entre fichas
+    var RECUO_MAXIMO = 7; // desalinhamento das linhas, para não parecerem uma tabela
+
+    /**
+     * Arruma as fichas de um habitat por linhas, medindo-as.
+     *
+     * O domínio não sabe onde as coisas estão — um habitat tem área, que é um
+     * número, e nada mais. As posições são matéria da interface e calculam-se
+     * aqui, depois de o browser já saber a largura de cada ficha. Uma ficha só
+     * passa para a linha seguinte quando deixa de caber, pelo que nomes
+     * compridos em habitats estreitos deixam de se sobrepor.
      */
-    function posicao(animal, ordem) {
-      var desvio = 0;
-      for (var i = 0; i < animal.length; i++) desvio = (desvio * 31 + animal.charCodeAt(i)) % 100;
-      return {
-        x: 8 + (ordem % 2) * 36 + (desvio % 9),
-        y: 32 + Math.floor(ordem / 2) * 24 + (Math.floor(desvio / 9) % 7)
-      };
+    function arrumar(recinto) {
+      var fichas = Array.prototype.slice.call(recinto.querySelectorAll(".animal"));
+      if (!fichas.length) {
+        recinto.style.minHeight = "";
+        return;
+      }
+
+      var disponivel = recinto.clientWidth - 2 * MARGEM;
+      var x = 0;
+      var y = TOPO;
+      var linha = 0;
+      var alturaDaLinha = 0;
+      var recuo = 0;
+
+      fichas.forEach(function (ficha) {
+        var largura = ficha.offsetWidth;
+
+        // Cabe nesta linha? Se não, começa outra.
+        if (x > 0 && recuo + x + largura > disponivel) {
+          y += alturaDaLinha + ESPACO;
+          linha += 1;
+          recuo = (linha * 5) % (RECUO_MAXIMO + 1);
+          x = 0;
+          alturaDaLinha = 0;
+        }
+
+        ficha.style.left = (MARGEM + recuo + x) + "px";
+        ficha.style.top = y + "px";
+
+        x += largura + ESPACO;
+        alturaDaLinha = Math.max(alturaDaLinha, ficha.offsetHeight);
+      });
+
+      // O habitat cresce para caber toda a gente, mas nunca encolhe abaixo do
+      // tamanho mínimo que a folha de estilo lhe dá.
+      var necessario = y + alturaDaLinha + MARGEM;
+      if (necessario > recinto.clientHeight)
+        recinto.style.minHeight = necessario + "px";
     }
 
     /**
@@ -524,6 +570,9 @@
         boardEl.appendChild(desenharHabitat(id, porHabitat[id]));
       });
 
+      // Só depois de estarem no documento é que se lhes pode medir a largura.
+      boardEl.querySelectorAll(".habitat").forEach(arrumar);
+
       preverParaTodos(seleccionado);
     }
 
@@ -549,8 +598,8 @@
       previsao.className = "forecast";
       recinto.appendChild(previsao);
 
-      residentes.forEach(function (animal, ordem) {
-        recinto.appendChild(desenharAnimal(animal, ordem));
+      residentes.forEach(function (animal) {
+        recinto.appendChild(desenharAnimal(animal));
       });
 
       recinto.addEventListener("click", function () {
@@ -572,17 +621,15 @@
       return recinto;
     }
 
-    function desenharAnimal(animal, ordem) {
-      var lugar = posicao(animal, ordem);
+    function desenharAnimal(animal) {
       var ficha = document.createElement("button");
       ficha.type = "button";
       ficha.draggable = true;
       ficha.className = "animal" + (seleccionado === animal ? " picked" : "");
       ficha.dataset.animal = animal;
+      ficha.title = hotel.getAnimalName(animal);
       ficha.textContent = hotel.getAnimalName(animal);
       ficha.style.setProperty("--species", coresPorEspecie[hotel.getSpeciesOf(animal)]);
-      ficha.style.setProperty("--x", lugar.x + "%");
-      ficha.style.setProperty("--y", lugar.y + "%");
 
       ficha.addEventListener("click", function (evento) {
         evento.stopPropagation();
@@ -680,6 +727,18 @@
 
     document.getElementById("next-season").addEventListener("click", avancarEstacao);
     document.getElementById("reset").addEventListener("click", arrancar);
+
+    // A largura dos habitats muda com a da janela, e com ela o arrumo das fichas.
+    var reArrumar;
+    window.addEventListener("resize", function () {
+      clearTimeout(reArrumar);
+      reArrumar = setTimeout(function () {
+        boardEl.querySelectorAll(".habitat").forEach(function (recinto) {
+          recinto.style.minHeight = "";
+          arrumar(recinto);
+        });
+      }, 120);
+    });
 
     arrancar();
   })();
