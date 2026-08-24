@@ -212,6 +212,48 @@ public class Hotel implements Serializable {
     return Math.round(total);
   }
 
+  /**
+   * Calcula a satisfação global que o hotel teria se o animal fosse alojado no
+   * habitat indicado, sem o alojar lá.
+   *
+   * <p>Mudar um animal de habitat não lhe altera apenas a satisfação: altera a
+   * dos outros animais dos dois habitats, que passam a ter mais ou menos
+   * vizinhos, e a dos tratadores, cujo trabalho depende da população de cada
+   * habitat. Por isso a resposta é a satisfação global, e não a do animal.
+   *
+   * <p>A transferência é mesmo feita e imediatamente desfeita, em vez de o
+   * efeito ser calculado por uma fórmula própria. É a única forma de a
+   * pré-visualização não poder divergir do que acontece a sério: qualquer
+   * alteração às fórmulas de satisfação aparece aqui sem ninguém se lembrar
+   * disso. O hotel não fica marcado como alterado.
+   *
+   * @param animalId  a chave do animal a mudar
+   * @param habitatId a chave do habitat de destino
+   * @return a satisfação global que o hotel teria depois da mudança
+   * @throws UnknownAnimalKeyExceptionCore  se o animal não existir
+   * @throws UnknownHabitatKeyExceptionCore se o habitat não existir
+   */
+  public long satisfactionIfMovedTo(String animalId, String habitatId)
+      throws UnknownAnimalKeyExceptionCore, UnknownHabitatKeyExceptionCore {
+
+    Animal animal = _animals.get(animalId);
+    if (animal == null)
+      throw new UnknownAnimalKeyExceptionCore(animalId);
+
+    Habitat destination = _habitats.get(habitatId);
+    if (destination == null)
+      throw new UnknownHabitatKeyExceptionCore(habitatId);
+
+    Habitat origin = animal.getHabitat();
+    if (origin.equals(destination))
+      return getGlobalSatisfaction();
+
+    move(animal, destination);
+    long satisfaction = getGlobalSatisfaction();
+    move(animal, origin);
+    return satisfaction;
+  }
+
   // ----------------------------------------------------------------- registo
 
   /**
@@ -464,10 +506,23 @@ public class Hotel implements Serializable {
     if (habitat == null)
       throw new UnknownHabitatKeyExceptionCore(habitatId);
 
-    animal.getHabitat().removeAnimal(animal);
-    habitat.addAnimal(animal);
-    animal.setHabitat(habitat);
+    move(animal, habitat);
     changed();
+  }
+
+  /**
+   * Aloja um animal noutro habitat, sem marcar o hotel como alterado.
+   *
+   * <p>É partilhada pela transferência e pela sua pré-visualização, que a usa
+   * duas vezes para pôr tudo como estava.
+   *
+   * @param animal      o animal a mudar
+   * @param destination o habitat que passa a alojá-lo
+   */
+  private static void move(Animal animal, Habitat destination) {
+    animal.getHabitat().removeAnimal(animal);
+    destination.addAnimal(animal);
+    animal.setHabitat(destination);
   }
 
   /**
