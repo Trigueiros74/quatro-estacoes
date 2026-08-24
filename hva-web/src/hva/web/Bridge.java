@@ -94,6 +94,94 @@ public class Bridge {
   }
 
   /**
+   * @param animalId a chave do animal
+   * @return o nome do animal, ou vazio se não existir
+   */
+  @JSExport
+  public String getAnimalName(String animalId) {
+    Animal animal = _hotel.getAnimal(animalId);
+    return animal == null ? "" : animal.getName();
+  }
+
+  /**
+   * @param animalId a chave do animal
+   * @return a chave da espécie do animal, ou vazio se não existir
+   */
+  @JSExport
+  public String getSpeciesOf(String animalId) {
+    Animal animal = _hotel.getAnimal(animalId);
+    return animal == null ? "" : animal.getSpecies().getId();
+  }
+
+  /**
+   * @param animalId a chave do animal
+   * @return a satisfação do animal, em centésimos inteiros
+   */
+  @JSExport
+  public int getAnimalSatisfaction(String animalId) {
+    Animal animal = _hotel.getAnimal(animalId);
+    return animal == null ? 0 : (int) Math.round(animal.getSatisfaction() * 100);
+  }
+
+  /**
+   * @param habitatId a chave do habitat
+   * @return o nome do habitat, ou vazio se não existir
+   */
+  @JSExport
+  public String getHabitatName(String habitatId) {
+    Habitat habitat = _hotel.getHabitat(habitatId);
+    return habitat == null ? "" : habitat.getName();
+  }
+
+  /**
+   * A área alimenta a fórmula da satisfação (área a dividir pela população) e é
+   * também o que dá a um habitat o seu tamanho no ecrã.
+   *
+   * @param habitatId a chave do habitat
+   * @return a área do habitat, ou zero se não existir
+   */
+  @JSExport
+  public int getHabitatArea(String habitatId) {
+    Habitat habitat = _hotel.getHabitat(habitatId);
+    return habitat == null ? 0 : habitat.getArea();
+  }
+
+  /**
+   * A adequação do habitat à espécie do animal, que vale ±20 pontos de
+   * satisfação e explica metade das jogadas boas e más.
+   *
+   * @param habitatId a chave do habitat
+   * @param animalId  a chave do animal cuja espécie interessa
+   * @return {@code POS}, {@code NEU}, {@code NEG}, ou vazio se algum não existir
+   */
+  @JSExport
+  public String getInfluence(String habitatId, String animalId) {
+    Habitat habitat = _hotel.getHabitat(habitatId);
+    Animal animal = _hotel.getAnimal(animalId);
+    if (habitat == null || animal == null)
+      return "";
+    return habitat.getInfluenceOn(animal.getSpecies()).toString();
+  }
+
+  /**
+   * Pré-visualiza uma transferência sem a fazer — o que permite acender o
+   * habitat antes de lá se largar o animal.
+   *
+   * @param animalId  a chave do animal
+   * @param habitatId a chave do habitat de destino
+   * @return a satisfação global que o hotel teria depois da mudança, ou a actual
+   *         se as chaves não existirem
+   */
+  @JSExport
+  public int satisfactionIfMovedTo(String animalId, String habitatId) {
+    try {
+      return (int) _hotel.satisfactionIfMovedTo(animalId, habitatId);
+    } catch (Exception unknown) {
+      return getGlobalSatisfaction();
+    }
+  }
+
+  /**
    * Transfere um animal para outro habitat — a mutação que a fase 2 fará ao
    * largar o animal.
    *
