@@ -74,7 +74,13 @@ Três adições ao núcleo estão previstas, porque pertencem mesmo ao domínio:
 3. **`importFrom(Reader)`** — extrair a análise do formato de importação do
    `importFile(String)`, que fica como invólucro. O domínio aprende a ler de
    outro sítio que não um ficheiro; é preciso porque o TeaVM não tem sistema de
-   ficheiros. Fase 2.
+   ficheiros. Ainda por fazer.
+
+A adição 2 está feita. O `satisfactionIfMovedTo` **faz a transferência e
+desfá-la**, em vez de calcular o efeito por uma fórmula própria: é a única forma
+de a previsão não poder divergir do que acontece a sério, porque qualquer
+alteração às fórmulas de satisfação aparece lá sem ninguém se lembrar disso. O
+hotel não fica marcado como alterado — pré-visualizar não é jogar.
 
 Capacidade de habitats, orçamento, turnos, objectivos e eventos são regras de
 jogo: `hva-game`.
@@ -242,8 +248,8 @@ alteração passaria a ser uma dança entre dois repositórios).
 |:---:|:---|:---|
 | 00 | Gradle multi-módulo, 213 testes em `./gradlew test` | **feita** |
 | 01 | *Spike* do TeaVM — hotel construído em código, `getGlobalSatisfaction()` no browser | **feita** — o *gate* passou, o Spring Boot fica descartado |
-| 02 | Primeira fatia do sandbox: habitats desenhados, animais arrastáveis, satisfação ao vivo, **publicar** | **a seguir** |
-| 03 | Estações: virar o ano e ver a cascata nas árvores | |
+| 02 | Primeira fatia do sandbox: habitats desenhados, animais arrastáveis, satisfação ao vivo, **publicar** | **feita** |
+| 03 | Estações: virar o ano e ver a cascata nas árvores | **a seguir** |
 | 04 | As 15 acções todas — espécies, árvores, pessoal, vacinas | |
 | 05 | Restrições (`hva-game`): orçamento, capacidade, acções por turno, objectivos | |
 | 06 | Guardar em `localStorage`, eventos, polimento | |
@@ -275,6 +281,26 @@ isso seria trabalho a perder.
   de exportação do módulo é substituída por uma atribuição a `globalThis`, o que
   dispensa `type="module"` e o `import()` de um `blob:`, que algumas políticas
   de segurança recusam.
+
+### O que a fase 2 deixou montado
+
+* `Hotel.satisfactionIfMovedTo`, com testes próprios em `hva-core/test/` — o
+  primeiro código de teste que o núcleo tem.
+* A `Bridge` dá à interface o que ela precisa para desenhar: nome, área,
+  espécie, influência, satisfação por animal, e a previsão.
+* **A largura de cada habitat é a sua área.** É a mesma grandeza que entra na
+  fórmula da satisfação (área a dividir pela população), pelo que um habitat
+  grande parece grande e enchê-lo mostra à vista o espaço de cada animal a
+  encolher.
+* **As posições dos animais vivem só na página.** São calculadas por uma grelha
+  (para não se sobreporem) mais um desvio fixo derivado da chave do animal (para
+  não parecerem alinhados). O domínio continua sem saber onde as coisas estão.
+* Ao pegar num animal — a arrastar ou a seleccionar — **todos os habitats
+  mostram o que a mudança custaria**. É a `satisfactionIfMovedTo` chamada uma vez
+  por habitat.
+* As fichas deslizam entre habitats por *FLIP*: mede-se a posição antes,
+  redesenha-se, e anima-se do sítio antigo para o novo. Respeita
+  `prefers-reduced-motion`.
 
 ### O que a fase 0 deixou montado
 

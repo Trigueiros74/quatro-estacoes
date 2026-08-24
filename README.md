@@ -103,8 +103,8 @@ Se o TeaVM resistir mais de uma semana, a alternativa é Spring Boot + REST.
 |:---:|:---|:---|
 | 00 | Migrar para Gradle multi-módulo, 213 testes em `./gradlew test` | ✅ feita |
 | 01 | *Spike* do TeaVM — `getGlobalSatisfaction()` a correr no browser | ✅ feita |
-| 02 | Habitats desenhados, animais arrastáveis, satisfação ao vivo, **publicar** | 🔨 a seguir |
-| 03 | Estações: virar o ano e ver a cascata nas árvores | |
+| 02 | Habitats desenhados, animais arrastáveis, satisfação ao vivo, **publicar** | ✅ feita |
+| 03 | Estações: virar o ano e ver a cascata nas árvores | 🔨 a seguir |
 | 04 | As acções todas — espécies, árvores, pessoal, vacinas | |
 | 05 | Restrições: orçamento, capacidade, acções por turno, objectivos | |
 | 06 | Guardar em `localStorage`, eventos, polimento | |
