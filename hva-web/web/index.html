@@ -228,6 +228,31 @@
 
   .habitat-name b { color: var(--ink); font-weight: 600; }
 
+  /*
+   * Com um animal na mão, cada habitat diz o que custaria largá-lo lá. O número
+   * vem do domínio, que faz a transferência e a desfaz — a previsão não pode
+   * divergir do que vai acontecer.
+   */
+  .habitat.better { border-color: var(--gain); background: color-mix(in srgb, var(--gain) 7%, var(--sunken)); }
+  .habitat.worse { border-color: var(--loss); background: color-mix(in srgb, var(--loss) 7%, var(--sunken)); }
+  .habitat.here { border-style: dashed; }
+  .habitat.target { box-shadow: inset 0 0 0 2px currentColor; }
+
+  .forecast {
+    position: absolute;
+    right: var(--step);
+    bottom: var(--step);
+    font-family: var(--data);
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+  }
+
+  .habitat.better .forecast { color: var(--gain); }
+  .habitat.worse .forecast { color: var(--loss); }
+  .habitat.here .forecast { color: var(--muted); }
+
   .animal {
     position: absolute;
     left: var(--x);
@@ -410,50 +435,75 @@
     var satisfacao = 0;
     var seleccionado = null;
 
-    /*
-     * Onde cada animal está dentro do seu habitat. O domínio não sabe nem tem
-     * de saber: um habitat tem área, que é um número, e nada mais. As posições
-     * são matéria da interface e vivem aqui.
-     */
-    var posicoes = {};
-
     /* Uma cor por espécie, pela ordem em que as espécies aparecem. */
     var coresPorEspecie = {};
+
+    var semAnimacao = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     function arrancar() {
       hotel = Hotel.create();
       satisfacao = hotel.getGlobalSatisfaction();
       seleccionado = null;
-      posicoes = {};
       coresPorEspecie = {};
 
-      animais().forEach(function (animal, ordem) {
+      animais().forEach(function (animal) {
         var especie = hotel.getSpeciesOf(animal);
         if (!(especie in coresPorEspecie)) {
           coresPorEspecie[especie] = "var(--species-" +
             (Object.keys(coresPorEspecie).length % 4) + ")";
         }
-        posicoes[animal] = espalhar(ordem);
       });
 
       scoreEl.classList.remove("up", "down");
       desenhar();
+      aconselhar();
       reportEl.textContent = Hotel.getYearReport().trimEnd();
     }
 
     function animais() { return hotel.getAnimalIds().split(","); }
     function habitats() { return hotel.getHabitatIds().split(","); }
 
-    /**
-     * Uma posição espalhada mas determinística, para os animais não nascerem
-     * todos em cima uns dos outros nem saltarem de sítio a cada redesenho.
+    /*
+     * Onde cada animal fica dentro do seu habitat. O domínio não sabe nem tem
+     * de saber: um habitat tem área, que é um número, e nada mais. As posições
+     * são matéria da interface e são calculadas aqui — uma grelha, para não se
+     * sobreporem, mais um desvio fixo por animal, para não parecerem alinhados.
      */
-    function espalhar(semente) {
-      var linha = Math.floor(semente / 2);
+    function posicao(animal, ordem) {
+      var desvio = 0;
+      for (var i = 0; i < animal.length; i++) desvio = (desvio * 31 + animal.charCodeAt(i)) % 100;
       return {
-        x: 8 + (semente % 2) * 34 + ((semente * 37) % 11),
-        y: 30 + linha * 22 + ((semente * 53) % 9)
+        x: 8 + (ordem % 2) * 36 + (desvio % 9),
+        y: 32 + Math.floor(ordem / 2) * 24 + (Math.floor(desvio / 9) % 7)
       };
+    }
+
+    /**
+     * Executa uma alteração e faz as fichas deslizarem das posições antigas
+     * para as novas, em vez de saltarem.
+     */
+    function comDeslize(alterar) {
+      if (semAnimacao) { alterar(); return; }
+
+      var antes = {};
+      boardEl.querySelectorAll(".animal").forEach(function (ficha) {
+        antes[ficha.dataset.animal] = ficha.getBoundingClientRect();
+      });
+
+      alterar();
+
+      boardEl.querySelectorAll(".animal").forEach(function (ficha) {
+        var origem = antes[ficha.dataset.animal];
+        if (!origem) return;
+        var destino = ficha.getBoundingClientRect();
+        var dx = origem.left - destino.left;
+        var dy = origem.top - destino.top;
+        if (!dx && !dy) return;
+        ficha.animate(
+          [{ transform: "translate(" + dx + "px," + dy + "px)" }, { transform: "none" }],
+          { duration: 420, easing: "cubic-bezier(.22,.61,.36,1)" }
+        );
+      });
     }
 
     /** Redesenha o tabuleiro a partir do estado do domínio. */
@@ -473,6 +523,8 @@
       habitats().forEach(function (id) {
         boardEl.appendChild(desenharHabitat(id, porHabitat[id]));
       });
+
+      preverParaTodos(seleccionado);
     }
 
     function desenharHabitat(id, residentes) {
@@ -493,26 +545,44 @@
       rotulo.appendChild(area);
       recinto.appendChild(rotulo);
 
-      residentes.forEach(function (animal) {
-        recinto.appendChild(desenharAnimal(animal));
+      var previsao = document.createElement("div");
+      previsao.className = "forecast";
+      recinto.appendChild(previsao);
+
+      residentes.forEach(function (animal, ordem) {
+        recinto.appendChild(desenharAnimal(animal, ordem));
       });
 
       recinto.addEventListener("click", function () {
         if (seleccionado) mover(seleccionado, id);
       });
+      recinto.addEventListener("dragover", function (evento) {
+        evento.preventDefault();
+        recinto.classList.add("target");
+      });
+      recinto.addEventListener("dragleave", function () {
+        recinto.classList.remove("target");
+      });
+      recinto.addEventListener("drop", function (evento) {
+        evento.preventDefault();
+        recinto.classList.remove("target");
+        mover(evento.dataTransfer.getData("text/plain"), id);
+      });
 
       return recinto;
     }
 
-    function desenharAnimal(animal) {
+    function desenharAnimal(animal, ordem) {
+      var lugar = posicao(animal, ordem);
       var ficha = document.createElement("button");
       ficha.type = "button";
+      ficha.draggable = true;
       ficha.className = "animal" + (seleccionado === animal ? " picked" : "");
       ficha.dataset.animal = animal;
       ficha.textContent = hotel.getAnimalName(animal);
       ficha.style.setProperty("--species", coresPorEspecie[hotel.getSpeciesOf(animal)]);
-      ficha.style.setProperty("--x", posicoes[animal].x + "%");
-      ficha.style.setProperty("--y", posicoes[animal].y + "%");
+      ficha.style.setProperty("--x", lugar.x + "%");
+      ficha.style.setProperty("--y", lugar.y + "%");
 
       ficha.addEventListener("click", function (evento) {
         evento.stopPropagation();
@@ -521,23 +591,60 @@
         aconselhar();
       });
 
+      ficha.addEventListener("dragstart", function (evento) {
+        evento.dataTransfer.setData("text/plain", animal);
+        evento.dataTransfer.effectAllowed = "move";
+        ficha.classList.add("held");
+        preverParaTodos(animal);
+      });
+      ficha.addEventListener("dragend", function () {
+        ficha.classList.remove("held");
+        preverParaTodos(seleccionado);
+      });
+
       return ficha;
+    }
+
+    /**
+     * Com um animal na mão, marca cada habitat com o que a mudança lhe faria.
+     * O número vem do domínio, que faz a transferência e a desfaz — a previsão
+     * não pode divergir do que vai acontecer a sério.
+     */
+    function preverParaTodos(animal) {
+      boardEl.querySelectorAll(".habitat").forEach(function (recinto) {
+        var id = recinto.dataset.habitat;
+        var previsao = recinto.querySelector(".forecast");
+        recinto.classList.remove("better", "worse", "here");
+
+        if (!animal) { previsao.textContent = ""; return; }
+
+        if (hotel.getHabitatOf(animal) === id) {
+          recinto.classList.add("here");
+          previsao.textContent = "está aqui";
+          return;
+        }
+
+        var variacao = hotel.satisfactionIfMovedTo(animal, id) - satisfacao;
+        recinto.classList.add(variacao >= 0 ? "better" : "worse");
+        previsao.textContent = (variacao >= 0 ? "+" : "−") + Math.abs(variacao);
+      });
     }
 
     /** Diz o que está seleccionado, ou volta à instrução por omissão. */
     function aconselhar() {
       if (!seleccionado) {
-        hintEl.textContent = "Seleccione um animal e escolha o habitat de destino.";
+        hintEl.textContent = "Arraste um animal para outro habitat — ou seleccione-o e escolha o destino.";
         return;
       }
       hintEl.textContent = hotel.getAnimalName(seleccionado) +
-        " seleccionado — escolha o habitat de destino.";
+        " na mão: cada habitat mostra o que a mudança custaria.";
     }
 
     /** Pede a transferência ao domínio e mostra o que ela custou ou rendeu. */
     function mover(animal, habitat) {
       seleccionado = null;
-      if (hotel.getHabitatOf(animal) === habitat || !hotel.transferAnimal(animal, habitat)) {
+      if (!animal || hotel.getHabitatOf(animal) === habitat ||
+          !hotel.transferAnimal(animal, habitat)) {
         desenhar();
         aconselhar();
         return;
@@ -554,7 +661,7 @@
     function assentar() {
       var antes = satisfacao;
       satisfacao = hotel.getGlobalSatisfaction();
-      desenhar();
+      comDeslize(desenhar);
       aconselhar();
       mostrarDiferenca(satisfacao - antes);
     }
