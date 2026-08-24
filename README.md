@@ -102,8 +102,8 @@ Se o TeaVM resistir mais de uma semana, a alternativa é Spring Boot + REST.
 | | Fase | Estado |
 |:---:|:---|:---|
 | 00 | Migrar para Gradle multi-módulo, 213 testes em `./gradlew test` | ✅ feita |
-| 01 | *Spike* do TeaVM — `getGlobalSatisfaction()` a correr no browser | 🔨 a seguir |
-| 02 | Habitats desenhados, animais arrastáveis, satisfação ao vivo, **publicar** | |
+| 01 | *Spike* do TeaVM — `getGlobalSatisfaction()` a correr no browser | ✅ feita |
+| 02 | Habitats desenhados, animais arrastáveis, satisfação ao vivo, **publicar** | 🔨 a seguir |
 | 03 | Estações: virar o ano e ver a cascata nas árvores | |
 | 04 | As acções todas — espécies, árvores, pessoal, vacinas | |
 | 05 | Restrições: orçamento, capacidade, acções por turno, objectivos | |
@@ -121,6 +121,13 @@ em `/usr/share/java`.
 $ ./gradlew build              # compilar tudo e correr os 213 testes
 $ ./gradlew test               # só os testes
 $ ./gradlew test -Ptests='A-19-*'   # só os casos que interessam
+```
+
+O núcleo compilado para o browser precisa também de `node`, para as verificações:
+
+```console
+$ ./gradlew :hva-web:spike     # corre o cenário na JVM e em JavaScript e compara
+$ ./gradlew :hva-web:webPage   # monta build/web/index.html, auto-contido
 ```
 
 Os casos partilham um directório de trabalho e correm por ordem de nome, tal

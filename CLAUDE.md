@@ -34,11 +34,14 @@ Plano de jogo completo:
 ## Estado actual
 
 `hva-core` e `hva-app` importados, a compilar sem avisos, **213/213 testes
-automáticos a passar**. Fase 0 feita: o *build* é Gradle multi-módulo.
+automáticos a passar**. Fase 0 feita: o *build* é Gradle multi-módulo. Fase 1
+feita: **o TeaVM aguentou** e o núcleo corre no browser.
 
 ```console
 $ ./gradlew build                    # compilar tudo e correr os 213 testes
 $ ./gradlew test -Ptests='A-19-*'    # só os casos que interessam
+$ ./gradlew :hva-web:spike           # o gate da fase 1: JVM vs JavaScript
+$ ./gradlew :hva-web:webPage         # monta build/web/index.html, auto-contido
 $ make && ./run-tests.sh             # build herdado, segunda opinião independente
 ```
 
@@ -50,7 +53,7 @@ $ make && ./run-tests.sh             # build herdado, segunda opinião independe
 hva-core/     Domínio: animais, habitats, árvores, funcionários, vacinas
 hva-app/      CLI de referência — é ela que mantém os 213 testes vivos
 tests/        213 casos de teste e saídas esperadas
-hva-web/      (a criar) TeaVM + interface: posições, desenho, arrastar, animações
+hva-web/      TeaVM + interface: `Bridge` (API para o JS), `Scenario`, `Report`
 hva-game/     (a criar) Restrições: orçamento, capacidade, acções por turno, objectivos
 ```
 
@@ -119,6 +122,24 @@ espécie e a espécie conhece os seus animais); o `readObject` de um `HashSet`
 pede `hashCode()` aos elementos antes de as chaves estarem repostas, e rebenta
 com `NullPointerException` ao abrir um ficheiro guardado. Este bug custava 9
 testes. Não o reintroduzir.
+
+### ⚠️ A armadilha do arranque do TeaVM
+
+**Um método estático exportado tem de correr antes de qualquer construtor
+exportado.** O TeaVM só inicializa as classes da biblioteca quando se entra por
+um `@JSExport` estático (ou pelo `main`). Um construtor exportado invocado em
+primeiro lugar corre antes disso: o `String.CASE_INSENSITIVE_ORDER` ainda é
+`null`, e como *todos* os índices do `Hotel` são `TreeMap` com esse comparador,
+o primeiro `registerSpecies` rebenta com
+
+```text
+TypeError: Cannot read properties of null (reading '$compare')
+```
+
+É por isso que a `Bridge` se cria por `Hotel.create()` e não por `new Hotel()` —
+uma fábrica estática arranca o runtime e devolve a instância, sem deixar
+armadilha de ordem para quem escrever a interface. **Qualquer classe que venha a
+ser exportada deve seguir a mesma regra.**
 
 ---
 
@@ -190,6 +211,13 @@ Não é preciso inventar «isto foi bom» ou «isto foi mau»:
 corre dentro do browser, sem servidor. Alojamento estático e resposta
 instantânea ao arrastar um animal.
 
+**Confirmado na fase 1**, com o TeaVM 0.12.3: o núcleo atravessa sem uma linha
+reescrita. As colecções ordenadas por comparador, os `enum` com `toString`
+próprio, os `stream`, o `Math.log`, a aritmética de vírgula flutuante e o
+cálculo do dano das vacinas — que compara nomes caractere a caractere com um
+`StringBuilder` — produzem exactamente os mesmos valores na JVM e em
+JavaScript. O ficheiro gerado tem 143 KB por ofuscar.
+
 **A interface não se escreve em Java.** O TeaVM leva o *domínio* para o browser e
 exporta-lhe uma API; o arrastar, as animações e o CSS escrevem-se em JS/TS a
 falar com essa API. O Java não desenha nada.
@@ -213,8 +241,8 @@ alteração passaria a ser uma dança entre dois repositórios).
 | | Fase | Estado |
 |:---:|:---|:---|
 | 00 | Gradle multi-módulo, 213 testes em `./gradlew test` | **feita** |
-| 01 | *Spike* do TeaVM — hotel construído em código, `getGlobalSatisfaction()` no browser | **a seguir** — *gate*: 1 semana, senão cair para Spring Boot |
-| 02 | Primeira fatia do sandbox: habitats desenhados, animais arrastáveis, satisfação ao vivo, **publicar** | |
+| 01 | *Spike* do TeaVM — hotel construído em código, `getGlobalSatisfaction()` no browser | **feita** — o *gate* passou, o Spring Boot fica descartado |
+| 02 | Primeira fatia do sandbox: habitats desenhados, animais arrastáveis, satisfação ao vivo, **publicar** | **a seguir** |
 | 03 | Estações: virar o ano e ver a cascata nas árvores | |
 | 04 | As 15 acções todas — espécies, árvores, pessoal, vacinas | |
 | 05 | Restrições (`hva-game`): orçamento, capacidade, acções por turno, objectivos | |
@@ -225,13 +253,28 @@ vem primeiro. Se o núcleo não correr no browser, muda tudo — alojamento,
 latência, pré-visualização ao arrastar. Desenhar quinze ecrãs antes de saber
 isso seria trabalho a perder.
 
-### Fase 1 em concreto
+### O que a fase 1 deixou montado
 
-O *spike* mínimo **não precisa do `importFile`**: constrói-se o hotel em código
-(`registerSpecies`, `registerHabitat`, `registerAnimal`), chama-se
-`getGlobalSatisfaction()` e imprime-se no browser. Não toca em `java.io` nenhum
-e testa o que interessa — se as colecções ordenadas, os `enum`, os `stream` e o
-`Math.log` sobrevivem à travessia.
+* `hva-web`, com o *plugin* `org.teavm` 0.12.3 e o alvo JavaScript em módulo
+  ES2015.
+* `Scenario` constrói o hotel em código — **sem tocar no `importFile`**, que o
+  TeaVM não suportaria. `Report` descreve-o de forma determinística.
+* **Os valores fraccionários são impressos em centésimos inteiros.** Não é
+  economia de espaço: a formatação de vírgula flutuante depende da língua e da
+  implementação, e compará-la mediria o formatador em vez de medir o domínio.
+* `Bridge` é a fronteira que o JavaScript vê: `getGlobalSatisfaction`,
+  `getSeason`, `nextSeason`, `transferAnimal`, `getReport`. Pobre de propósito —
+  a forma definitiva decide-se quando houver interface a consumi-la.
+* `./gradlew :hva-web:spike` corre o cenário nos dois lados e compara. A saída
+  em JavaScript é obtida **através da ponte**, e não do `main`, para que uma só
+  comparação prove as duas coisas: domínio intacto e API correcta.
+* `check/bridge.mjs` verifica o ciclo da fase 2 — ler a satisfação, transferir
+  um animal, voltar a ler — e que as transferências inválidas são recusadas sem
+  deixar rasto.
+* `./gradlew :hva-web:webPage` monta `build/web/index.html` auto-contido. A linha
+  de exportação do módulo é substituída por uma atribuição a `globalThis`, o que
+  dispensa `type="module"` e o `import()` de um `blob:`, que algumas políticas
+  de segurança recusam.
 
 ### O que a fase 0 deixou montado
 

@@ -1,0 +1,499 @@
+<title>Quatro Estações</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+
+<style>
+  :root {
+    --ground: #f3f5f2;
+    --surface: #fbfcfa;
+    --sunken: #eaeee9;
+    --ink: #1a1f1c;
+    --muted: #6d766f;
+    --line: #dfe4de;
+
+    --gain: #2f7a58;
+    --loss: #a83c28;
+
+    --spring: #4f9d5d;
+    --summer: #b8871f;
+    --fall: #b0552e;
+    --winter: #44779c;
+
+    /* A estação corrente pinta o acento da página; o guião actualiza-a. */
+    --season: var(--spring);
+
+    --display: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+    --body: "Source Serif 4", Georgia, serif;
+    --data: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    --step: 0.75rem;
+    --radius: 3px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0d1110;
+      --surface: #151a18;
+      --sunken: #101514;
+      --ink: #e6ebe7;
+      --muted: #8b968f;
+      --line: #242b28;
+
+      --gain: #5fbc8e;
+      --loss: #e0785f;
+
+      --spring: #6fc07e;
+      --summer: #d9a844;
+      --fall: #d1764a;
+      --winter: #6aa3c9;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0d1110;
+    --surface: #151a18;
+    --sunken: #101514;
+    --ink: #e6ebe7;
+    --muted: #8b968f;
+    --line: #242b28;
+
+    --gain: #5fbc8e;
+    --loss: #e0785f;
+
+    --spring: #6fc07e;
+    --summer: #d9a844;
+    --fall: #d1764a;
+    --winter: #6aa3c9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 74ch;
+    margin: 0 auto;
+    padding: calc(var(--step) * 4) var(--step) calc(var(--step) * 6);
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--step) * 3);
+  }
+
+  /* --------------------------------------------------------------- cabeçalho */
+
+  header { display: flex; flex-direction: column; gap: var(--step); }
+
+  .eyebrow {
+    font-family: var(--data);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--season);
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(2.4rem, 7vw, 3.6rem);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .standfirst { margin: 0; color: var(--muted); text-wrap: pretty; }
+
+  /* ------------------------------------------------------------- instrumento */
+
+  .instrument {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--season);
+    border-radius: var(--radius);
+    padding: calc(var(--step) * 2);
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--step) * 2);
+    transition: border-color 400ms ease;
+  }
+
+  .readout { display: flex; align-items: baseline; gap: var(--step); flex-wrap: wrap; }
+
+  .score {
+    position: relative;
+    font-family: var(--data);
+    font-weight: 600;
+    font-size: clamp(2.6rem, 9vw, 4rem);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    transition: color 200ms ease;
+  }
+
+  .score.up { color: var(--gain); }
+  .score.down { color: var(--loss); }
+
+  .score-label {
+    font-family: var(--data);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .delta {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    margin-left: 0.4em;
+    font-family: var(--data);
+    font-size: 0.95rem;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .delta.show { animation: rise 1100ms ease-out; }
+  .delta.up { color: var(--gain); }
+  .delta.down { color: var(--loss); }
+
+  @keyframes rise {
+    0%   { opacity: 0; transform: translateY(0.4em); }
+    18%  { opacity: 1; transform: translateY(0); }
+    70%  { opacity: 1; transform: translateY(-0.5em); }
+    100% { opacity: 0; transform: translateY(-1.1em); }
+  }
+
+  /* ---------------------------------------------------------------- habitats */
+
+  .habitats { display: flex; gap: var(--step); align-items: stretch; flex-wrap: wrap; }
+
+  .habitat {
+    flex: 1 1 0;
+    min-width: 15ch;
+    background: var(--sunken);
+    border: 1px dashed var(--line);
+    border-radius: var(--radius);
+    padding: var(--step);
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--step) * 0.75);
+    transition: border-color 160ms ease, background 160ms ease;
+  }
+
+  .habitat.target { border-color: var(--season); border-style: solid; background: var(--surface); }
+
+  .habitat-name {
+    font-family: var(--data);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    gap: var(--step);
+  }
+
+  .habitat-name b { color: var(--ink); font-weight: 600; }
+
+  .animals { display: flex; flex-wrap: wrap; gap: calc(var(--step) * 0.5); min-height: 2.4em; }
+
+  .animal {
+    font-family: var(--data);
+    font-size: 0.78rem;
+    padding: 0.3em 0.7em;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    cursor: grab;
+    user-select: none;
+    transition: transform 120ms ease, border-color 120ms ease;
+  }
+
+  .animal:hover { border-color: var(--season); }
+  .animal:focus-visible { outline: 2px solid var(--season); outline-offset: 2px; }
+  .animal.held { opacity: 0.4; cursor: grabbing; }
+  .animal.picked { border-color: var(--season); transform: translateY(-2px); }
+
+  /* --------------------------------------------------------------- controlos */
+
+  .controls { display: flex; gap: var(--step); align-items: center; flex-wrap: wrap; }
+
+  button {
+    font-family: var(--data);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 0.55em 1.1em;
+    cursor: pointer;
+    transition: border-color 140ms ease, color 140ms ease;
+  }
+
+  button:hover { border-color: var(--season); color: var(--season); }
+  button:focus-visible { outline: 2px solid var(--season); outline-offset: 2px; }
+
+  .hint { font-size: 0.85rem; color: var(--muted); margin: 0; }
+
+  /* ---------------------------------------------------------------- relatório */
+
+  h2 {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 1.35rem;
+    letter-spacing: -0.015em;
+    margin: 0 0 var(--step);
+    text-wrap: balance;
+  }
+
+  .report {
+    margin: 0;
+    padding: var(--step);
+    background: var(--sunken);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    font-family: var(--data);
+    font-size: 0.74rem;
+    line-height: 1.75;
+    max-height: 22rem;
+    overflow: auto;
+    white-space: pre;
+    color: var(--ink);
+  }
+
+  .note { color: var(--muted); font-size: 0.9rem; }
+  .note strong { color: var(--ink); font-weight: 600; }
+  code { font-family: var(--data); font-size: 0.88em; color: var(--season); }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding-top: calc(var(--step) * 1.5);
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+  }
+</style>
+
+<div class="page">
+  <header>
+    <div class="eyebrow" id="season-label">primavera</div>
+    <h1>Quatro Estações</h1>
+    <p class="standfirst">
+      Um hotel veterinário escrito em Java, a correr dentro desta página. Sem
+      servidor: o domínio foi compilado para JavaScript e responde aqui mesmo.
+    </p>
+  </header>
+
+  <section class="instrument">
+    <div class="readout">
+      <div class="score" id="score">—<span class="delta" id="delta"></span></div>
+      <div class="score-label">satisfação global</div>
+    </div>
+
+    <div class="habitats" id="habitats"></div>
+
+    <div class="controls">
+      <button id="next-season" type="button">Avançar estação</button>
+      <button id="reset" type="button">Recomeçar</button>
+    </div>
+
+    <p class="hint">
+      Arraste um animal de um habitat para o outro — ou seleccione-o e escolha o
+      destino. Cada movimento chama o domínio e a satisfação é recalculada.
+    </p>
+  </section>
+
+  <section>
+    <h2>O que este número custa a calcular</h2>
+    <p class="note">
+      Cada animal soma <strong>3 pontos por vizinho da mesma espécie</strong> e
+      perde <strong>2 por cada um de espécie diferente</strong>, mais a área que
+      lhe cabe e a adequação do habitat. Os tratadores descontam o trabalho de
+      limpar árvores, que depende da estação e da idade
+      (<code>dificuldade × esforço sazonal × log(idade+1)</code>). Mudar a
+      pantera para a savana, onde vivem dois leões que a detestam, é a jogada
+      que mais dói.
+    </p>
+  </section>
+
+  <section>
+    <h2>Um ano inteiro, estação a estação</h2>
+    <pre class="report" id="report">a carregar…</pre>
+  </section>
+
+  <footer>
+    Fase 1 — o <em>spike</em> do TeaVM. O núcleo (<code>hva-core</code>) é o
+    mesmo que passa 213 testes automáticos na linha de comandos; aqui está
+    compilado para JavaScript, sem uma linha de domínio reescrita.
+  </footer>
+</div>
+
+<script>@TEAVM@</script>
+
+<script>
+  (function () {
+    "use strict";
+
+    var Hotel = globalThis.HVA.Hotel;
+
+    var SEASONS = {
+      SPRING: { label: "primavera", accent: "var(--spring)" },
+      SUMMER: { label: "verão",     accent: "var(--summer)" },
+      FALL:   { label: "outono",    accent: "var(--fall)" },
+      WINTER: { label: "inverno",   accent: "var(--winter)" }
+    };
+
+    var scoreEl = document.getElementById("score");
+    var deltaEl = document.getElementById("delta");
+    var habitatsEl = document.getElementById("habitats");
+    var seasonEl = document.getElementById("season-label");
+    var reportEl = document.getElementById("report");
+
+    var hotel = null;
+    var score = 0;
+    var picked = null;
+
+    function start() {
+      hotel = Hotel.create();
+      score = hotel.getGlobalSatisfaction();
+      picked = null;
+      scoreEl.classList.remove("up", "down");
+      render();
+      reportEl.textContent = Hotel.getYearReport().trimEnd();
+    }
+
+    /** Redesenha os habitats e o mostrador a partir do estado do domínio. */
+    function render() {
+      var season = SEASONS[hotel.getSeason()];
+      document.documentElement.style.setProperty("--season", season.accent);
+      seasonEl.textContent = season.label;
+      scoreEl.firstChild.nodeValue = String(score);
+
+      var byHabitat = {};
+      hotel.getHabitatIds().split(",").forEach(function (id) { byHabitat[id] = []; });
+      hotel.getAnimalIds().split(",").forEach(function (id) {
+        byHabitat[hotel.getHabitatOf(id)].push(id);
+      });
+
+      habitatsEl.textContent = "";
+      Object.keys(byHabitat).forEach(function (id) {
+        habitatsEl.appendChild(habitatCard(id, byHabitat[id]));
+      });
+    }
+
+    function habitatCard(id, animals) {
+      var card = document.createElement("div");
+      card.className = "habitat";
+
+      var name = document.createElement("div");
+      name.className = "habitat-name";
+      name.innerHTML = "<b></b><span></span>";
+      name.querySelector("b").textContent = id;
+      name.querySelector("span").textContent = animals.length +
+        (animals.length === 1 ? " animal" : " animais");
+      card.appendChild(name);
+
+      var pen = document.createElement("div");
+      pen.className = "animals";
+      animals.forEach(function (animal) { pen.appendChild(animalChip(animal)); });
+      card.appendChild(pen);
+
+      card.addEventListener("dragover", function (event) {
+        event.preventDefault();
+        card.classList.add("target");
+      });
+      card.addEventListener("dragleave", function () { card.classList.remove("target"); });
+      card.addEventListener("drop", function (event) {
+        event.preventDefault();
+        card.classList.remove("target");
+        move(event.dataTransfer.getData("text/plain"), id);
+      });
+      card.addEventListener("click", function () {
+        if (picked) move(picked, id);
+      });
+
+      return card;
+    }
+
+    function animalChip(animal) {
+      var chip = document.createElement("button");
+      chip.className = "animal" + (picked === animal ? " picked" : "");
+      chip.type = "button";
+      chip.draggable = true;
+      chip.textContent = animal;
+
+      chip.addEventListener("dragstart", function (event) {
+        event.dataTransfer.setData("text/plain", animal);
+        chip.classList.add("held");
+      });
+      chip.addEventListener("dragend", function () { chip.classList.remove("held"); });
+      chip.addEventListener("click", function (event) {
+        event.stopPropagation();
+        picked = picked === animal ? null : animal;
+        render();
+      });
+
+      return chip;
+    }
+
+    /** Pede a transferência ao domínio e mostra o que ela custou ou rendeu. */
+    function move(animal, habitat) {
+      if (!animal || hotel.getHabitatOf(animal) === habitat) {
+        picked = null;
+        render();
+        return;
+      }
+      if (!hotel.transferAnimal(animal, habitat)) return;
+      picked = null;
+      settle();
+    }
+
+    function advance() {
+      hotel.nextSeason();
+      settle();
+    }
+
+    /** Relê a satisfação e anima a diferença. */
+    function settle() {
+      var before = score;
+      score = hotel.getGlobalSatisfaction();
+      render();
+      show(score - before);
+    }
+
+    function show(change) {
+      if (change === 0) return;
+      var better = change > 0;
+      deltaEl.textContent = (better ? "+" : "−") + Math.abs(change);
+      deltaEl.className = "delta " + (better ? "up" : "down");
+      scoreEl.classList.toggle("up", better);
+      scoreEl.classList.toggle("down", !better);
+      void deltaEl.offsetWidth;
+      deltaEl.classList.add("show");
+      setTimeout(function () { deltaEl.classList.remove("show"); }, 1100);
+    }
+
+    document.getElementById("next-season").addEventListener("click", advance);
+    document.getElementById("reset").addEventListener("click", start);
+
+    start();
+  })();
+</script>
