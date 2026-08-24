@@ -23,6 +23,12 @@
     /* A estação corrente pinta o acento da página; o guião actualiza-a. */
     --season: var(--spring);
 
+    /* Uma cor por espécie, atribuída pela ordem em que aparecem. */
+    --species-0: #b4632a;
+    --species-1: #4a5f7a;
+    --species-2: #6a7f3c;
+    --species-3: #8a4a6b;
+
     --display: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
     --body: "Source Serif 4", Georgia, serif;
     --data: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -47,6 +53,11 @@
       --summer: #d9a844;
       --fall: #d1764a;
       --winter: #6aa3c9;
+
+      --species-0: #d98a4e;
+      --species-1: #7f9bbd;
+      --species-2: #a3bd68;
+      --species-3: #c281a2;
     }
   }
 
@@ -65,6 +76,11 @@
     --summer: #d9a844;
     --fall: #d1764a;
     --winter: #6aa3c9;
+
+    --species-0: #d98a4e;
+    --species-1: #7f9bbd;
+    --species-2: #a3bd68;
+    --species-3: #c281a2;
   }
 
   * { box-sizing: border-box; }
@@ -80,7 +96,7 @@
   }
 
   .page {
-    max-width: 74ch;
+    max-width: 76ch;
     margin: 0 auto;
     padding: calc(var(--step) * 4) var(--step) calc(var(--step) * 6);
     display: flex;
@@ -99,6 +115,7 @@
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--season);
+    transition: color 500ms ease;
   }
 
   h1 {
@@ -124,7 +141,7 @@
     display: flex;
     flex-direction: column;
     gap: calc(var(--step) * 2);
-    transition: border-color 400ms ease;
+    transition: border-color 500ms ease;
   }
 
   .readout { display: flex; align-items: baseline; gap: var(--step); flex-wrap: wrap; }
@@ -175,59 +192,75 @@
     100% { opacity: 0; transform: translateY(-1.1em); }
   }
 
-  /* ---------------------------------------------------------------- habitats */
+  /* --------------------------------------------------------------- tabuleiro */
 
-  .habitats { display: flex; gap: var(--step); align-items: stretch; flex-wrap: wrap; }
+  /*
+   * Os habitats repartem a largura na proporção da área, que é a mesma grandeza
+   * que entra na satisfação (área a dividir pela população). Um habitat grande
+   * parece grande, e enchê-lo mostra à vista o espaço de cada animal a encolher.
+   */
+  .board { display: flex; gap: var(--step); align-items: stretch; }
 
   .habitat {
-    flex: 1 1 0;
-    min-width: 15ch;
+    position: relative;
+    flex-grow: var(--area);
+    flex-basis: 0;
+    min-width: 8rem;
+    min-height: 11rem;
     background: var(--sunken);
-    border: 1px dashed var(--line);
+    border: 1px solid var(--line);
     border-radius: var(--radius);
     padding: var(--step);
-    display: flex;
-    flex-direction: column;
-    gap: calc(var(--step) * 0.75);
-    transition: border-color 160ms ease, background 160ms ease;
+    transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
   }
-
-  .habitat.target { border-color: var(--season); border-style: solid; background: var(--surface); }
 
   .habitat-name {
     font-family: var(--data);
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     font-weight: 600;
     letter-spacing: 0.1em;
     color: var(--muted);
     display: flex;
     justify-content: space-between;
     gap: var(--step);
+    pointer-events: none;
   }
 
   .habitat-name b { color: var(--ink); font-weight: 600; }
 
-  .animals { display: flex; flex-wrap: wrap; gap: calc(var(--step) * 0.5); min-height: 2.4em; }
-
   .animal {
-    font-family: var(--data);
-    font-size: 0.78rem;
-    padding: 0.3em 0.7em;
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.3em 0.75em 0.3em 0.35em;
     background: var(--surface);
-    color: var(--ink);
     border: 1px solid var(--line);
     border-radius: 999px;
+    font-family: var(--data);
+    font-size: 0.72rem;
+    color: var(--ink);
     cursor: grab;
     user-select: none;
-    transition: transform 120ms ease, border-color 120ms ease;
+    white-space: nowrap;
+    transition: border-color 140ms ease, box-shadow 140ms ease;
+  }
+
+  .animal::before {
+    content: "";
+    width: 0.85em;
+    height: 0.85em;
+    border-radius: 50%;
+    background: var(--species);
+    flex: none;
   }
 
   .animal:hover { border-color: var(--season); }
   .animal:focus-visible { outline: 2px solid var(--season); outline-offset: 2px; }
-  .animal.held { opacity: 0.4; cursor: grabbing; }
-  .animal.picked { border-color: var(--season); transform: translateY(-2px); }
-
-  /* --------------------------------------------------------------- controlos */
+  .animal.held { opacity: 0.35; cursor: grabbing; }
+  .animal.picked { border-color: var(--season); box-shadow: 0 0 0 3px color-mix(in srgb, var(--season) 22%, transparent); }
 
   .controls { display: flex; gap: var(--step); align-items: center; flex-wrap: wrap; }
 
@@ -248,7 +281,7 @@
   button:hover { border-color: var(--season); color: var(--season); }
   button:focus-visible { outline: 2px solid var(--season); outline-offset: 2px; }
 
-  .hint { font-size: 0.85rem; color: var(--muted); margin: 0; }
+  .hint { font-size: 0.85rem; color: var(--muted); margin: 0; min-height: 1.6em; }
 
   /* ---------------------------------------------------------------- relatório */
 
@@ -287,6 +320,11 @@
     font-size: 0.85rem;
   }
 
+  @media (max-width: 34rem) {
+    .board { flex-direction: column; }
+    .habitat { min-height: 9rem; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
   }
@@ -308,16 +346,15 @@
       <div class="score-label">satisfação global</div>
     </div>
 
-    <div class="habitats" id="habitats"></div>
+    <div class="board" id="board"></div>
 
     <div class="controls">
       <button id="next-season" type="button">Avançar estação</button>
       <button id="reset" type="button">Recomeçar</button>
     </div>
 
-    <p class="hint">
-      Arraste um animal de um habitat para o outro — ou seleccione-o e escolha o
-      destino. Cada movimento chama o domínio e a satisfação é recalculada.
+    <p class="hint" id="hint">
+      Seleccione um animal e escolha o habitat de destino.
     </p>
   </section>
 
@@ -340,9 +377,10 @@
   </section>
 
   <footer>
-    Fase 1 — o <em>spike</em> do TeaVM. O núcleo (<code>hva-core</code>) é o
-    mesmo que passa 213 testes automáticos na linha de comandos; aqui está
-    compilado para JavaScript, sem uma linha de domínio reescrita.
+    Fase 2 — a primeira fatia do <em>sandbox</em>. O núcleo
+    (<code>hva-core</code>) é o mesmo que passa 213 testes automáticos na linha
+    de comandos; aqui está compilado para JavaScript, sem uma linha de domínio
+    reescrita.
   </footer>
 </div>
 
@@ -354,146 +392,188 @@
 
     var Hotel = globalThis.HVA.Hotel;
 
-    var SEASONS = {
-      SPRING: { label: "primavera", accent: "var(--spring)" },
-      SUMMER: { label: "verão",     accent: "var(--summer)" },
-      FALL:   { label: "outono",    accent: "var(--fall)" },
-      WINTER: { label: "inverno",   accent: "var(--winter)" }
+    var ESTACOES = {
+      SPRING: { nome: "primavera", acento: "var(--spring)" },
+      SUMMER: { nome: "verão",     acento: "var(--summer)" },
+      FALL:   { nome: "outono",    acento: "var(--fall)" },
+      WINTER: { nome: "inverno",   acento: "var(--winter)" }
     };
 
     var scoreEl = document.getElementById("score");
     var deltaEl = document.getElementById("delta");
-    var habitatsEl = document.getElementById("habitats");
+    var boardEl = document.getElementById("board");
     var seasonEl = document.getElementById("season-label");
     var reportEl = document.getElementById("report");
+    var hintEl = document.getElementById("hint");
 
     var hotel = null;
-    var score = 0;
-    var picked = null;
+    var satisfacao = 0;
+    var seleccionado = null;
 
-    function start() {
+    /*
+     * Onde cada animal está dentro do seu habitat. O domínio não sabe nem tem
+     * de saber: um habitat tem área, que é um número, e nada mais. As posições
+     * são matéria da interface e vivem aqui.
+     */
+    var posicoes = {};
+
+    /* Uma cor por espécie, pela ordem em que as espécies aparecem. */
+    var coresPorEspecie = {};
+
+    function arrancar() {
       hotel = Hotel.create();
-      score = hotel.getGlobalSatisfaction();
-      picked = null;
+      satisfacao = hotel.getGlobalSatisfaction();
+      seleccionado = null;
+      posicoes = {};
+      coresPorEspecie = {};
+
+      animais().forEach(function (animal, ordem) {
+        var especie = hotel.getSpeciesOf(animal);
+        if (!(especie in coresPorEspecie)) {
+          coresPorEspecie[especie] = "var(--species-" +
+            (Object.keys(coresPorEspecie).length % 4) + ")";
+        }
+        posicoes[animal] = espalhar(ordem);
+      });
+
       scoreEl.classList.remove("up", "down");
-      render();
+      desenhar();
       reportEl.textContent = Hotel.getYearReport().trimEnd();
     }
 
-    /** Redesenha os habitats e o mostrador a partir do estado do domínio. */
-    function render() {
-      var season = SEASONS[hotel.getSeason()];
-      document.documentElement.style.setProperty("--season", season.accent);
-      seasonEl.textContent = season.label;
-      scoreEl.firstChild.nodeValue = String(score);
+    function animais() { return hotel.getAnimalIds().split(","); }
+    function habitats() { return hotel.getHabitatIds().split(","); }
 
-      var byHabitat = {};
-      hotel.getHabitatIds().split(",").forEach(function (id) { byHabitat[id] = []; });
-      hotel.getAnimalIds().split(",").forEach(function (id) {
-        byHabitat[hotel.getHabitatOf(id)].push(id);
+    /**
+     * Uma posição espalhada mas determinística, para os animais não nascerem
+     * todos em cima uns dos outros nem saltarem de sítio a cada redesenho.
+     */
+    function espalhar(semente) {
+      var linha = Math.floor(semente / 2);
+      return {
+        x: 8 + (semente % 2) * 34 + ((semente * 37) % 11),
+        y: 30 + linha * 22 + ((semente * 53) % 9)
+      };
+    }
+
+    /** Redesenha o tabuleiro a partir do estado do domínio. */
+    function desenhar() {
+      var estacao = ESTACOES[hotel.getSeason()];
+      document.documentElement.style.setProperty("--season", estacao.acento);
+      seasonEl.textContent = estacao.nome;
+      scoreEl.firstChild.nodeValue = String(satisfacao);
+
+      var porHabitat = {};
+      habitats().forEach(function (id) { porHabitat[id] = []; });
+      animais().forEach(function (animal) {
+        porHabitat[hotel.getHabitatOf(animal)].push(animal);
       });
 
-      habitatsEl.textContent = "";
-      Object.keys(byHabitat).forEach(function (id) {
-        habitatsEl.appendChild(habitatCard(id, byHabitat[id]));
+      boardEl.textContent = "";
+      habitats().forEach(function (id) {
+        boardEl.appendChild(desenharHabitat(id, porHabitat[id]));
       });
     }
 
-    function habitatCard(id, animals) {
-      var card = document.createElement("div");
-      card.className = "habitat";
+    function desenharHabitat(id, residentes) {
+      var recinto = document.createElement("div");
+      recinto.className = "habitat";
+      recinto.dataset.habitat = id;
 
-      var name = document.createElement("div");
-      name.className = "habitat-name";
-      name.innerHTML = "<b></b><span></span>";
-      name.querySelector("b").textContent = id;
-      name.querySelector("span").textContent = animals.length +
-        (animals.length === 1 ? " animal" : " animais");
-      card.appendChild(name);
+      // A largura vem da área: é a mesma grandeza que entra na satisfação.
+      recinto.style.setProperty("--area", hotel.getHabitatArea(id));
 
-      var pen = document.createElement("div");
-      pen.className = "animals";
-      animals.forEach(function (animal) { pen.appendChild(animalChip(animal)); });
-      card.appendChild(pen);
+      var rotulo = document.createElement("div");
+      rotulo.className = "habitat-name";
+      var nome = document.createElement("b");
+      nome.textContent = hotel.getHabitatName(id);
+      var area = document.createElement("span");
+      area.textContent = hotel.getHabitatArea(id) + " m²";
+      rotulo.appendChild(nome);
+      rotulo.appendChild(area);
+      recinto.appendChild(rotulo);
 
-      card.addEventListener("dragover", function (event) {
-        event.preventDefault();
-        card.classList.add("target");
-      });
-      card.addEventListener("dragleave", function () { card.classList.remove("target"); });
-      card.addEventListener("drop", function (event) {
-        event.preventDefault();
-        card.classList.remove("target");
-        move(event.dataTransfer.getData("text/plain"), id);
-      });
-      card.addEventListener("click", function () {
-        if (picked) move(picked, id);
+      residentes.forEach(function (animal) {
+        recinto.appendChild(desenharAnimal(animal));
       });
 
-      return card;
+      recinto.addEventListener("click", function () {
+        if (seleccionado) mover(seleccionado, id);
+      });
+
+      return recinto;
     }
 
-    function animalChip(animal) {
-      var chip = document.createElement("button");
-      chip.className = "animal" + (picked === animal ? " picked" : "");
-      chip.type = "button";
-      chip.draggable = true;
-      chip.textContent = animal;
+    function desenharAnimal(animal) {
+      var ficha = document.createElement("button");
+      ficha.type = "button";
+      ficha.className = "animal" + (seleccionado === animal ? " picked" : "");
+      ficha.dataset.animal = animal;
+      ficha.textContent = hotel.getAnimalName(animal);
+      ficha.style.setProperty("--species", coresPorEspecie[hotel.getSpeciesOf(animal)]);
+      ficha.style.setProperty("--x", posicoes[animal].x + "%");
+      ficha.style.setProperty("--y", posicoes[animal].y + "%");
 
-      chip.addEventListener("dragstart", function (event) {
-        event.dataTransfer.setData("text/plain", animal);
-        chip.classList.add("held");
-      });
-      chip.addEventListener("dragend", function () { chip.classList.remove("held"); });
-      chip.addEventListener("click", function (event) {
-        event.stopPropagation();
-        picked = picked === animal ? null : animal;
-        render();
+      ficha.addEventListener("click", function (evento) {
+        evento.stopPropagation();
+        seleccionado = seleccionado === animal ? null : animal;
+        desenhar();
+        aconselhar();
       });
 
-      return chip;
+      return ficha;
+    }
+
+    /** Diz o que está seleccionado, ou volta à instrução por omissão. */
+    function aconselhar() {
+      if (!seleccionado) {
+        hintEl.textContent = "Seleccione um animal e escolha o habitat de destino.";
+        return;
+      }
+      hintEl.textContent = hotel.getAnimalName(seleccionado) +
+        " seleccionado — escolha o habitat de destino.";
     }
 
     /** Pede a transferência ao domínio e mostra o que ela custou ou rendeu. */
-    function move(animal, habitat) {
-      if (!animal || hotel.getHabitatOf(animal) === habitat) {
-        picked = null;
-        render();
+    function mover(animal, habitat) {
+      seleccionado = null;
+      if (hotel.getHabitatOf(animal) === habitat || !hotel.transferAnimal(animal, habitat)) {
+        desenhar();
+        aconselhar();
         return;
       }
-      if (!hotel.transferAnimal(animal, habitat)) return;
-      picked = null;
-      settle();
+      assentar();
     }
 
-    function advance() {
+    function avancarEstacao() {
       hotel.nextSeason();
-      settle();
+      assentar();
     }
 
-    /** Relê a satisfação e anima a diferença. */
-    function settle() {
-      var before = score;
-      score = hotel.getGlobalSatisfaction();
-      render();
-      show(score - before);
+    /** Relê a satisfação, redesenha e anima a diferença. */
+    function assentar() {
+      var antes = satisfacao;
+      satisfacao = hotel.getGlobalSatisfaction();
+      desenhar();
+      aconselhar();
+      mostrarDiferenca(satisfacao - antes);
     }
 
-    function show(change) {
-      if (change === 0) return;
-      var better = change > 0;
-      deltaEl.textContent = (better ? "+" : "−") + Math.abs(change);
-      deltaEl.className = "delta " + (better ? "up" : "down");
-      scoreEl.classList.toggle("up", better);
-      scoreEl.classList.toggle("down", !better);
+    function mostrarDiferenca(variacao) {
+      if (variacao === 0) return;
+      var melhor = variacao > 0;
+      deltaEl.textContent = (melhor ? "+" : "−") + Math.abs(variacao);
+      deltaEl.className = "delta " + (melhor ? "up" : "down");
+      scoreEl.classList.toggle("up", melhor);
+      scoreEl.classList.toggle("down", !melhor);
       void deltaEl.offsetWidth;
       deltaEl.classList.add("show");
       setTimeout(function () { deltaEl.classList.remove("show"); }, 1100);
     }
 
-    document.getElementById("next-season").addEventListener("click", advance);
-    document.getElementById("reset").addEventListener("click", start);
+    document.getElementById("next-season").addEventListener("click", avancarEstacao);
+    document.getElementById("reset").addEventListener("click", arrancar);
 
-    start();
+    arrancar();
   })();
 </script>
