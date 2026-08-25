@@ -33,9 +33,9 @@ Plano de jogo completo:
 
 ## Estado actual
 
-`hva-core` e `hva-app` importados, a compilar sem avisos, **213/213 testes
-automáticos a passar**. Fase 0 feita: o *build* é Gradle multi-módulo. Fase 1
-feita: **o TeaVM aguentou** e o núcleo corre no browser.
+Fases 0 a 2 feitas, fase 3 a decorrer. **213/213 testes da CLI** e **10 testes
+próprios do núcleo** a passar. O núcleo corre no browser, o mundo está desenhado
+em azulejos, e **6 das 12 acções do domínio** já têm interface.
 
 ```console
 $ ./gradlew build                    # compilar tudo e correr os 213 testes
@@ -53,9 +53,16 @@ $ make && ./run-tests.sh             # build herdado, segunda opinião independe
 hva-core/     Domínio: animais, habitats, árvores, funcionários, vacinas
 hva-app/      CLI de referência — é ela que mantém os 213 testes vivos
 tests/        213 casos de teste e saídas esperadas
-hva-web/      TeaVM + interface: `Bridge` (API para o JS), `Scenario`, `Report`
+hva-web/      TeaVM + interface
+  src/hva/web/  Bridge (a API que o JS vê), Scenario, Report, Spike
+  web/          index.html — o jogo inteiro: canvas, sprites, menus
+  check/        bridge.mjs e report.mjs, corridos pelo `spike` sobre o node
 hva-game/     (a criar) Restrições: orçamento, capacidade, acções por turno, objectivos
 ```
+
+O `web/index.html` é um **modelo**: o `@TEAVM@` lá dentro é substituído pelo
+JavaScript gerado quando se corre `:hva-web:webPage`. Editar sempre o modelo,
+nunca o `build/web/index.html`.
 
 ---
 
@@ -292,10 +299,12 @@ alteração passaria a ser uma dança entre dois repositórios).
 | 00 | Gradle multi-módulo, 213 testes em `./gradlew test` | **feita** |
 | 01 | *Spike* do TeaVM — hotel construído em código, `getGlobalSatisfaction()` no browser | **feita** — o *gate* passou, o Spring Boot fica descartado |
 | 02 | Prova de que o domínio se comanda do browser: mover animais, ver a satisfação ao vivo, **publicar** | **feita** |
-| 03 | **O jogo a parecer um jogo** — mundo em azulejos, *sprites*, as acções todas | **a decorrer** |
+| 03 | **O jogo a parecer um jogo** — mundo em azulejos, *sprites*, as acções todas | **a decorrer** — mundo e consola feitos, faltam 6 acções e o pessoal no mundo |
 | 04 | O cenário deixa de ser fixo: `importFrom(Reader)` e cenários carregados de texto | |
 | 05 | Restrições (`hva-game`): saúde a valer pontos, orçamento, capacidade, acções por turno | |
 | 06 | Guardar em `localStorage`, eventos, polimento | |
+
+O detalhe do que falta está em **«O que falta fazer»**, mais acima.
 
 A fase 2 foi dada por fechada cedo demais. Cumpriu o que estava escrito, mas o
 que estava escrito era mais estreito do que o objectivo: **a página expõe 2 das
@@ -307,30 +316,131 @@ vem primeiro. Se o núcleo não correr no browser, muda tudo — alojamento,
 latência, pré-visualização ao arrastar. Desenhar quinze ecrãs antes de saber
 isso seria trabalho a perder.
 
-### O que a fase 1 deixou montado
+---
 
-* `hva-web`, com o *plugin* `org.teavm` 0.12.3 e o alvo JavaScript em módulo
-  ES2015.
-* `Scenario` constrói o hotel em código — **sem tocar no `importFile`**, que o
-  TeaVM não suportaria. `Report` descreve-o de forma determinística.
-* **Os valores fraccionários são impressos em centésimos inteiros.** Não é
-  economia de espaço: a formatação de vírgula flutuante depende da língua e da
-  implementação, e compará-la mediria o formatador em vez de medir o domínio.
-* `Bridge` é a fronteira que o JavaScript vê: `getGlobalSatisfaction`,
-  `getSeason`, `nextSeason`, `transferAnimal`, `getReport`. Pobre de propósito —
-  a forma definitiva decide-se quando houver interface a consumi-la.
-* `./gradlew :hva-web:spike` corre o cenário nos dois lados e compara. A saída
-  em JavaScript é obtida **através da ponte**, e não do `main`, para que uma só
-  comparação prove as duas coisas: domínio intacto e API correcta.
-* `check/bridge.mjs` verifica o ciclo da fase 2 — ler a satisfação, transferir
-  um animal, voltar a ler — e que as transferências inválidas são recusadas sem
-  deixar rasto.
-* `./gradlew :hva-web:webPage` monta `build/web/index.html` auto-contido. A linha
-  de exportação do módulo é substituída por uma atribuição a `globalThis`, o que
-  dispensa `type="module"` e o `import()` de um `blob:`, que algumas políticas
-  de segurança recusam.
+## O que falta fazer
 
-### O que a fase 2 deixou montado
+### As acções: 6 de 12
+
+A CLI tem 15 comandos que mudam estado; tirando os 3 de ficheiro (novo, abrir,
+guardar), que no browser não se aplicam, sobram **12 acções de jogo**.
+
+| Acção | Método do núcleo | Ponte | Menu |
+|:---|:---|:---:|:---:|
+| Mover animal | `transferAnimal` | ✅ | arrastar |
+| Avançar estação | `nextSeason` | ✅ | ✅ |
+| Abrir recinto | `registerHabitat` | ✅ | ✅ |
+| Mudar área | `changeHabitatArea` | ✅ | ✅ |
+| Mudar adequação | `changeInfluence` | ✅ | ✅ |
+| Plantar árvore | `addTreeToHabitat` | ✅ | ✅ |
+| **Alojar animal** | `registerAnimal` | ❌ | ❌ |
+| **Contratar** | `registerEmployee` | ❌ | ❌ |
+| **Atribuir responsabilidade** | `addResponsibility` | ❌ | ❌ |
+| **Retirar responsabilidade** | `removeResponsibility` | ❌ | ❌ |
+| **Registar vacina** | `registerVaccine` | ❌ | ❌ |
+| **Vacinar animal** | `vaccinateAnimal` | ❌ | ❌ |
+
+Fora das 12, mas precisa de controlo próprio: **criar espécie**
+(`registerSpecies`, já público — ver a nota sobre não haver comando para isso).
+
+**As remoções tornaram-se urgentes.** Desde que se pode abrir recintos e plantar
+árvores pela interface, não se pode desfazer nem uma coisa nem outra: uma árvore
+mal plantada fica lá a envelhecer para sempre. É a adição 1 ao núcleo, ainda por
+fazer — apagar animal, habitat, árvore e funcionário. Cuidado com os ciclos de
+referências: apagar um animal obriga a tirá-lo da espécie e do habitat, e apagar
+um habitat obriga a decidir o que fazer aos residentes.
+
+**Como se acrescenta uma acção.** A maquinaria já está feita; são dois sítios:
+
+1. **`Bridge.java`** — um método `@JSExport` que devolve `boolean`, apanha as
+   excepções do núcleo e responde `false` em vez de as deixar passar. O
+   JavaScript não sabe lidar com excepções Java.
+2. **`web/index.html`** — uma entrada em `MENUS` (para navegar) e outra em
+   `PEDIDOS` (o formulário: campos, `confirmar`, e o `faz` que chama a ponte).
+   Os campos são `escolha`, `numero` ou `texto`; um campo com `valor` vai buscar
+   o valor de partida ao domínio.
+
+E sempre uma asserção em **`check/bridge.mjs`**, incluindo os casos recusados.
+
+### O que a ponte ainda não lê
+
+Não há como desenhar pessoal nem vacinas sem isto:
+
+* `getEmployeeIds`, `getEmployeeName`, `getEmployeeType`, `getResponsibilities`,
+  `getEmployeeWork`, `getEmployeeSatisfaction`;
+* `getVaccineIds`, `getVaccineName`, as espécies a que cada vacina se destina;
+* `getHealthHistory(animal)` — o historial de vacinações, onde ficam os `ERRO`;
+* `getHabitatWork(habitat)` e `getCaretakerCount(habitat)`, para se poder
+  explicar a pontuação em vez de a afirmar.
+
+### O aspecto que falta
+
+* **Tratadores e veterinários no mundo.** Hoje não aparecem em lado nenhum, e são
+  eles que carregam quase toda a pontuação. Figuras que andam pelos recintos de
+  que tratam.
+* **A decomposição da pontuação.** O utilizador não percebe porque é que avançar
+  a estação mexe no número — e com razão, porque nada lho mostra. Falta um painel
+  com as três parcelas (animais, tratadores, veterinários) e qual delas se mexeu.
+  Os números já existem todos; é só mostrá-los.
+* **O relatório do ano** ainda é um despejo de texto monoespaçado por baixo do
+  jogo. Ou vira parte do jogo, ou sai.
+* **Vacinar tem de se ver.** Um animal com `ERRO` no historial devia mostrá-lo.
+* *Por decidir:* **os sprites das espécies inventadas.** A silhueta é uma só e o
+  que muda é a pelagem, escolhida de uma lista de quatro. Se o jogador criar uma
+  «Girafa», ela fica com aspecto de felino. Ou se dá uma lista de arquétipos à
+  escolha (felino, ave, réptil, herbívoro), ou se deriva o arquétipo da chave da
+  espécie.
+
+### As duas mecânicas que estão partidas
+
+Ambas descobertas a medir, ambas a corrigir no `hva-game` e **nunca** no
+`hva-core`:
+
+1. **As vacinas não valem pontos.** `Animal.getSatisfaction()` não tem termo
+   nenhum de saúde. Vacinar mal calcula o dano, decide entre `CONFUSÃO`,
+   `ACIDENTE` e `ERRO`, guarda-o no historial — e mais nada acontece. O animal
+   com `ERRO` tem exactamente a mesma satisfação que teria são. *Ainda sem teste
+   a fixá-lo; vale a pena escrever um, nem que seja para o dia em que a regra de
+   jogo o contrariar de propósito.*
+2. **A área não vale pontos**, e pior, premeia o abandono — ver a secção própria.
+   Provado em `hva-core/test/hva/AreaEffectTest.java`.
+
+Enquanto estas duas não forem corrigidas, metade das acções da tabela acima são
+botões que não fazem diferença nenhuma à pontuação. É a razão mais forte para a
+fase 5 não ser adiada indefinidamente.
+
+### O cenário está fixo no código
+
+`Scenario.java` constrói dois recintos, quatro animais, quatro árvores, duas
+pessoas e uma vacina, em Java compilado. Para haver cenários a sério é preciso o
+`importFrom(Reader)` (adição 3 ao núcleo) e um formato de texto que o browser
+possa ler sem sistema de ficheiros.
+
+---
+
+## O que já está montado
+
+Da mais recente para a mais antiga.
+
+### Fase 3 — o jogo a parecer um jogo
+
+* **O mundo é um `<canvas>`** com azulejos de 16 píxeis lógicos e escala inteira.
+  O cenário parado — chão e cercas — é desenhado uma vez para um canvas
+  auxiliar (`fundo`) e copiado a cada quadro; só os bichos, as árvores e o que
+  anda no ar são redesenhados.
+* **A arte é matriz de caracteres mais paleta.** `SILHUETA` (o animal), `COPA` e
+  `RAMOS` (a árvore). A função `retratar` pinta qualquer uma delas com qualquer
+  paleta para um canvas que depois só se copia.
+* **A copa da árvore vem do `getBiologicalCycle()`** — não é escolha da
+  interface. `SEMFOLHAS` usa a silhueta dos ramos; as outras três mudam de cor.
+* **Os animais caminham**, a velocidade constante, virados para onde vão. O
+  desenho está no canvas; por cima dele há um `<button>` transparente que trata
+  do rato e do teclado, e que acompanha o bicho a cada quadro.
+* **O menu é escrito como dados** (`MENUS` e `PEDIDOS`), não como HTML.
+* **O `build` verifica a página**: sintaxe do guião, cores hexadecimais válidas,
+  `id` sem duplicados e todos os ecrãs referidos existentes.
+
+### Fase 2 — o domínio comandado do browser
 
 * `Hotel.satisfactionIfMovedTo`, com testes próprios em `hva-core/test/` — o
   primeiro código de teste que o núcleo tem.
@@ -350,7 +460,32 @@ isso seria trabalho a perder.
   redesenha-se, e anima-se do sítio antigo para o novo. Respeita
   `prefers-reduced-motion`.
 
-### O que a fase 0 deixou montado
+### Fase 1 — o spike do TeaVM
+
+* `hva-web`, com o *plugin* `org.teavm` 0.12.3 e o alvo JavaScript em módulo
+  ES2015.
+* `Scenario` constrói o hotel em código — **sem tocar no `importFile`**, que o
+  TeaVM não suportaria. `Report` descreve-o de forma determinística.
+* **Os valores fraccionários são impressos em centésimos inteiros.** Não é
+  economia de espaço: a formatação de vírgula flutuante depende da língua e da
+  implementação, e compará-la mediria o formatador em vez de medir o domínio.
+* `Bridge` é a fronteira que o JavaScript vê. Nasceu com cinco métodos e cresce
+  com a interface; devolve texto e números simples, porque tudo o que atravessa
+  a fronteira do TeaVM tem de ser um tipo que o JavaScript entenda. As listas
+  atravessam como chaves separadas por vírgulas, e os métodos que mudam estado
+  devolvem `boolean` — o JavaScript não sabe lidar com excepções Java.
+* `./gradlew :hva-web:spike` corre o cenário nos dois lados e compara. A saída
+  em JavaScript é obtida **através da ponte**, e não do `main`, para que uma só
+  comparação prove as duas coisas: domínio intacto e API correcta.
+* `check/bridge.mjs` verifica o ciclo da fase 2 — ler a satisfação, transferir
+  um animal, voltar a ler — e que as transferências inválidas são recusadas sem
+  deixar rasto.
+* `./gradlew :hva-web:webPage` monta `build/web/index.html` auto-contido. A linha
+  de exportação do módulo é substituída por uma atribuição a `globalThis`, o que
+  dispensa `type="module"` e o `import()` de um `blob:`, que algumas políticas
+  de segurança recusam.
+
+### Fase 0 — o build em Gradle
 
 * Gradle 9.7.1 pelo *wrapper* (`./gradlew`); `hva-app` depende de `hva-core`.
 * `options.release = 17` em vez de uma *toolchain*: qualquer JDK 17 ou posterior
@@ -366,6 +501,8 @@ isso seria trabalho a perder.
   reordenados.
 * O `make` e o `run-tests.sh` ficaram, como segunda opinião independente sobre o
   mesmo corpo de testes.
+
+---
 
 ---
 
