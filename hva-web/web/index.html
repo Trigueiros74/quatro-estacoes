@@ -130,17 +130,167 @@
    * O mundo é uma cena desenhada e tem paleta própria: não segue o tema claro
    * ou escuro do leitor, tal como uma imagem não segue.
    */
+  /* A consola: o mundo em cima, os comandos em baixo, tudo numa só peça. */
+  .screen {
+    background: #241d13;
+    border: 2px solid #100c06;
+    border-radius: 5px;
+    padding: 7px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
   .world {
     position: relative;
     display: flex;
     justify-content: center;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
     overflow: hidden;
+    border-radius: 2px;
     background: #6f8f5c;
   }
 
   .world canvas { display: block; image-rendering: pixelated; }
+
+  /* ------------------------------------------------------------- comandos */
+
+  .hud {
+    border: 2px solid #f2e7d2;
+    border-radius: 3px;
+    background: #17130c;
+    color: #f2e7d2;
+    font-family: var(--data);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .gauges {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--step);
+    flex-wrap: wrap;
+    padding: 0.5em 0.85em;
+    border-bottom: 2px solid rgba(242, 231, 210, 0.28);
+  }
+
+  .season-badge {
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #d9c9a4;
+  }
+
+  .tally { display: flex; align-items: baseline; gap: 0.6em; }
+
+  .tally-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #a89678;
+  }
+
+  .score {
+    position: relative;
+    font-size: 1.5rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    transition: color 200ms ease;
+  }
+
+  .score.up { color: #7fd9a8; }
+  .score.down { color: #e8907a; }
+
+  .delta {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    margin-left: 0.4em;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .delta.show { animation: rise 1100ms ease-out; }
+  .delta.up { color: #7fd9a8; }
+  .delta.down { color: #e8907a; }
+
+  @keyframes rise {
+    0%   { opacity: 0; transform: translateY(0.4em); }
+    18%  { opacity: 1; transform: translateY(0); }
+    70%  { opacity: 1; transform: translateY(-0.5em); }
+    100% { opacity: 0; transform: translateY(-1.1em); }
+  }
+
+  .menu { padding: 0.6em 0.85em; display: flex; flex-direction: column; gap: 0.5em; }
+
+  .menu-title {
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #a89678;
+  }
+
+  .menu-options { display: flex; flex-wrap: wrap; gap: 0.35em 1.1em; }
+
+  /* Uma opção de menu: a seta acende com o foco, como manda o género. */
+  .option {
+    appearance: none;
+    background: none;
+    border: 0;
+    padding: 0.1em 0;
+    color: #f2e7d2;
+    font: inherit;
+    font-size: 0.76rem;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.45em;
+  }
+
+  .option::before {
+    content: "▸";
+    color: transparent;
+    transition: color 120ms ease;
+  }
+
+  .option:hover::before,
+  .option:focus-visible::before { color: #f2c14e; }
+  .option:hover, .option:focus-visible { color: #ffffff; outline: none; }
+  .option[disabled] { color: #6f6350; cursor: not-allowed; }
+  .option[disabled]:hover::before { color: transparent; }
+
+  .menu-form { display: flex; flex-wrap: wrap; gap: 0.5em; align-items: center; }
+
+  .menu-form label {
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #a89678;
+  }
+
+  .menu-form select,
+  .menu-form input {
+    background: #241d13;
+    color: #f2e7d2;
+    border: 1px solid #6f6350;
+    border-radius: 2px;
+    padding: 0.3em 0.5em;
+    font: inherit;
+    font-size: 0.74rem;
+  }
+
+  .menu-form input { width: 7em; font-variant-numeric: tabular-nums; }
+  .menu-form select:focus-visible,
+  .menu-form input:focus-visible { outline: 2px solid #f2c14e; outline-offset: 1px; }
+
+  .menu-note { font-size: 0.68rem; color: #a89678; margin: 0; min-height: 1.4em; }
+  .menu-note.warn { color: #e8907a; }
 
   .overlay { position: absolute; inset: 0; pointer-events: none; }
   .overlay > * { pointer-events: auto; }
@@ -261,88 +411,12 @@
     100% { opacity: 0; transform: translate(-50%, -58%) scale(1); }
   }
 
-  /* ------------------------------------------------------------- instrumento */
-
-  .instrument {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-top: 3px solid var(--season);
-    border-radius: var(--radius);
-    padding: calc(var(--step) * 2);
-    display: flex;
-    flex-direction: column;
-    gap: calc(var(--step) * 2);
-    transition: border-color 500ms ease;
-  }
-
-  .readout { display: flex; align-items: baseline; gap: var(--step); flex-wrap: wrap; }
-
-  .score {
-    position: relative;
-    font-family: var(--data);
-    font-weight: 600;
-    font-size: clamp(2.6rem, 9vw, 4rem);
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-    letter-spacing: -0.03em;
-    transition: color 200ms ease;
-  }
-
-  .score.up { color: var(--gain); }
-  .score.down { color: var(--loss); }
-
-  .score-label {
-    font-family: var(--data);
-    font-size: 0.72rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+  .hint {
+    font-size: 0.85rem;
     color: var(--muted);
+    margin: var(--step) 0 0;
+    min-height: 1.6em;
   }
-
-  .delta {
-    position: absolute;
-    left: 100%;
-    top: 0;
-    margin-left: 0.4em;
-    font-family: var(--data);
-    font-size: 0.95rem;
-    font-weight: 600;
-    white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .delta.show { animation: rise 1100ms ease-out; }
-  .delta.up { color: var(--gain); }
-  .delta.down { color: var(--loss); }
-
-  @keyframes rise {
-    0%   { opacity: 0; transform: translateY(0.4em); }
-    18%  { opacity: 1; transform: translateY(0); }
-    70%  { opacity: 1; transform: translateY(-0.5em); }
-    100% { opacity: 0; transform: translateY(-1.1em); }
-  }
-
-  .controls { display: flex; gap: var(--step); align-items: center; flex-wrap: wrap; }
-
-  button {
-    font-family: var(--data);
-    font-size: 0.78rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    color: var(--ink);
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    padding: 0.55em 1.1em;
-    cursor: pointer;
-    transition: border-color 140ms ease, color 140ms ease;
-  }
-
-  button:hover { border-color: var(--season); color: var(--season); }
-  button:focus-visible { outline: 2px solid var(--season); outline-offset: 2px; }
-
-  .hint { font-size: 0.85rem; color: var(--muted); margin: 0; min-height: 1.6em; }
 
   /* ---------------------------------------------------------------- relatório */
 
@@ -388,7 +462,7 @@
 
 <div class="page">
   <header>
-    <div class="eyebrow" id="season-label">primavera</div>
+    <div class="eyebrow">hotel veterinário</div>
     <h1>Quatro Estações</h1>
     <p class="standfirst">
       Um hotel veterinário escrito em Java, a correr dentro desta página. Sem
@@ -397,28 +471,28 @@
   </header>
 
   <div class="wide">
-    <div class="world" id="world">
-      <canvas id="canvas"></canvas>
-      <div class="overlay" id="overlay"></div>
-      <div class="herald" id="herald"></div>
-    </div>
-  </div>
+    <div class="screen">
+      <div class="world" id="world">
+        <canvas id="canvas"></canvas>
+        <div class="overlay" id="overlay"></div>
+        <div class="herald" id="herald"></div>
+      </div>
 
-  <section class="instrument">
-    <div class="readout">
-      <div class="score" id="score">—<span class="delta" id="delta"></span></div>
-      <div class="score-label">satisfação global</div>
+      <div class="hud">
+        <div class="gauges">
+          <div class="season-badge" id="season-label">primavera</div>
+          <div class="tally">
+            <span class="tally-label">satisfação</span>
+            <span class="score" id="score">—<span class="delta" id="delta"></span></span>
+          </div>
+        </div>
+        <div class="menu" id="menu"></div>
+      </div>
     </div>
-
-    <div class="controls">
-      <button id="next-season" type="button">Avançar estação</button>
-      <button id="reset" type="button">Recomeçar</button>
-    </div>
-
     <p class="hint" id="hint">
       Arraste um animal para outro recinto — ou seleccione-o e escolha o destino.
     </p>
-  </section>
+  </div>
 
   <section>
     <h2>O que este número custa a calcular</h2>
@@ -610,6 +684,7 @@
     var reportEl = document.getElementById("report");
     var hintEl = document.getElementById("hint");
     var heraldEl = document.getElementById("herald");
+    var menuEl = document.getElementById("menu");
 
     var hotel = null;
     var satisfacao = 0;
@@ -672,6 +747,7 @@
       scoreEl.classList.remove("up", "down");
       desenhar();
       aconselhar();
+      abrir("raiz");
       reportEl.textContent = Hotel.getYearReport().trimEnd();
     }
 
@@ -1273,6 +1349,201 @@
       anunciar(PALETAS[hotel.getSeason()].nome);
     }
 
+    /* ---------------------------------------------------------------- menus */
+
+    /*
+     * Os comandos, em árvore. Cada opção ou salta para outro ecrã (`vai`), ou
+     * faz alguma coisa (`faz`), ou abre um formulário (`pede`).
+     *
+     * A lista é escrita como dados e não como HTML de propósito: as acções do
+     * domínio que ainda faltam entram aqui, uma entrada de cada vez, sem mexer
+     * na maquinaria.
+     */
+    var MENUS = {
+      raiz: {
+        opcoes: [
+          { rotulo: "Recintos", vai: "recintos" },
+          { rotulo: "Avançar estação", faz: avancarEstacao },
+          { rotulo: "Recomeçar", faz: function () { arrancar(); } }
+        ]
+      },
+
+      recintos: {
+        titulo: "Recintos",
+        volta: "raiz",
+        opcoes: [
+          { rotulo: "Mudar a área", pede: "area" }
+        ]
+      }
+    };
+
+    /*
+     * Os formulários. Cada campo sabe descrever-se; o menu monta-o e entrega os
+     * valores já convertidos a quem faz o trabalho.
+     */
+    var PEDIDOS = {
+      area: {
+        titulo: "Mudar a área de um recinto",
+        volta: "recintos",
+        nota: "A área dá espaço aos animais e trabalho a quem limpa o recinto.",
+        campos: [
+          { nome: "habitat", rotulo: "recinto", tipo: "escolha", opcoes: habitatsComNome },
+          { nome: "area", rotulo: "área (m²)", tipo: "numero", minimo: 1, valor: areaCorrente }
+        ],
+        confirmar: "Mudar",
+        faz: function (valores, dizer) {
+          if (!hotel.changeHabitatArea(valores.habitat, valores.area))
+            return dizer("Área recusada.", true);
+          planear();
+          assentar();
+          dizer(hotel.getHabitatName(valores.habitat) + " passou a " + valores.area + " m².");
+        }
+      }
+    };
+
+    /** As chaves dos recintos com o nome por que se apresentam. */
+    function habitatsComNome() {
+      return habitats().map(function (id) {
+        return { valor: id, rotulo: hotel.getHabitatName(id) };
+      });
+    }
+
+    /** O valor inicial do campo da área: o que o recinto escolhido já tem. */
+    function areaCorrente(valores) {
+      return hotel.getHabitatArea(valores.habitat || habitats()[0]);
+    }
+
+    var ecraCorrente = "raiz";
+
+    /** Mostra um ecrã de menu, ou um formulário se o nome for de um pedido. */
+    function abrir(nome) {
+      ecraCorrente = nome;
+      menuEl.textContent = "";
+
+      if (PEDIDOS[nome]) {
+        montarPedido(PEDIDOS[nome]);
+        return;
+      }
+
+      var ecra = MENUS[nome];
+      if (ecra.titulo) menuEl.appendChild(titulo(ecra.titulo));
+
+      var opcoes = document.createElement("div");
+      opcoes.className = "menu-options";
+
+      ecra.opcoes.forEach(function (entrada) {
+        opcoes.appendChild(opcao(entrada.rotulo, function () {
+          if (entrada.vai) abrir(entrada.vai);
+          else if (entrada.pede) abrir(entrada.pede);
+          else entrada.faz();
+        }));
+      });
+
+      if (ecra.volta)
+        opcoes.appendChild(opcao("Voltar", function () { abrir(ecra.volta); }));
+
+      menuEl.appendChild(opcoes);
+    }
+
+    function titulo(texto) {
+      var elemento = document.createElement("div");
+      elemento.className = "menu-title";
+      elemento.textContent = texto;
+      return elemento;
+    }
+
+    function opcao(rotulo, aoEscolher) {
+      var botao = document.createElement("button");
+      botao.type = "button";
+      botao.className = "option";
+      botao.textContent = rotulo;
+      botao.addEventListener("click", aoEscolher);
+      return botao;
+    }
+
+    /** Monta um formulário a partir da sua descrição. */
+    function montarPedido(pedido) {
+      menuEl.appendChild(titulo(pedido.titulo));
+
+      var formulario = document.createElement("div");
+      formulario.className = "menu-form";
+      var entradas = {};
+
+      pedido.campos.forEach(function (campo) {
+        var rotulo = document.createElement("label");
+        rotulo.textContent = campo.rotulo;
+        rotulo.htmlFor = "campo-" + campo.nome;
+        formulario.appendChild(rotulo);
+
+        var entrada;
+        if (campo.tipo === "escolha") {
+          entrada = document.createElement("select");
+          campo.opcoes().forEach(function (escolha) {
+            var linha = document.createElement("option");
+            linha.value = escolha.valor;
+            linha.textContent = escolha.rotulo;
+            entrada.appendChild(linha);
+          });
+        } else {
+          entrada = document.createElement("input");
+          entrada.type = "number";
+          if (campo.minimo !== undefined) entrada.min = campo.minimo;
+        }
+
+        entrada.id = "campo-" + campo.nome;
+        entradas[campo.nome] = entrada;
+        formulario.appendChild(entrada);
+      });
+
+      // Os campos que sabem um valor de partida vão buscá-lo ao domínio, e
+      // voltam a fazê-lo sempre que a escolha de que dependem muda.
+      function repor() {
+        pedido.campos.forEach(function (campo) {
+          if (!campo.valor) return;
+          entradas[campo.nome].value = campo.valor(colher());
+        });
+      }
+
+      function colher() {
+        var valores = {};
+        pedido.campos.forEach(function (campo) {
+          var bruto = entradas[campo.nome].value;
+          valores[campo.nome] = campo.tipo === "numero" ? parseInt(bruto, 10) : bruto;
+        });
+        return valores;
+      }
+
+      pedido.campos.forEach(function (campo) {
+        if (campo.tipo === "escolha")
+          entradas[campo.nome].addEventListener("change", repor);
+      });
+
+      var nota = document.createElement("p");
+      nota.className = "menu-note";
+      nota.textContent = pedido.nota || "";
+
+      function dizer(texto, mal) {
+        nota.textContent = texto;
+        nota.classList.toggle("warn", !!mal);
+      }
+
+      var accoes = document.createElement("div");
+      accoes.className = "menu-options";
+      accoes.appendChild(opcao(pedido.confirmar, function () {
+        var valores = colher();
+        if (pedido.campos.some(function (campo) {
+          return campo.tipo === "numero" && !Number.isFinite(valores[campo.nome]);
+        })) return dizer("Falta um número.", true);
+        pedido.faz(valores, dizer);
+      }));
+      accoes.appendChild(opcao("Voltar", function () { abrir(pedido.volta); }));
+
+      menuEl.appendChild(formulario);
+      menuEl.appendChild(nota);
+      menuEl.appendChild(accoes);
+      repor();
+    }
+
     /** Anuncia a estação que entrou. */
     function anunciar(estacao) {
       heraldEl.textContent = estacao;
@@ -1301,9 +1572,6 @@
       deltaEl.classList.add("show");
       setTimeout(function () { deltaEl.classList.remove("show"); }, 1100);
     }
-
-    document.getElementById("next-season").addEventListener("click", avancarEstacao);
-    document.getElementById("reset").addEventListener("click", arrancar);
 
     var reDesenhar;
     window.addEventListener("resize", function () {

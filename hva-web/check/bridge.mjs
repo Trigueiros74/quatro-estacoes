@@ -33,6 +33,21 @@ assert.equal(hotel.getTreeType("ACACIA"), "PERENE");
 assert.equal(hotel.getBiologicalCycle("BAOBA"), "GERARFOLHAS", "na primavera todas geram folhas");
 assert.equal(hotel.getTreeAge("BAOBA"), 20);
 
+// Alargar um recinto que alguém limpa não muda nada: o espaço dado aos animais
+// é, ao cêntimo, o trabalho dado ao tratador. Ver AreaEffectTest no núcleo.
+{
+  const antes = hotel.getGlobalSatisfaction();
+  assert.equal(hotel.changeHabitatArea("SAVANA", 1200), true);
+  assert.equal(hotel.getHabitatArea("SAVANA"), 1200);
+  assert.equal(hotel.getGlobalSatisfaction(), antes,
+    "a área cancela-se onde há tratador");
+
+  assert.equal(hotel.changeHabitatArea("SAVANA", 800), true, "e volta atrás");
+  assert.equal(hotel.getHabitatArea("SAVANA"), 800);
+  assert.equal(hotel.changeHabitatArea("SAVANA", -5), false, "área negativa é recusada");
+  assert.equal(hotel.changeHabitatArea("DESERTO", 100), false, "recinto inexistente é recusado");
+}
+
 // A pantera está na floresta, onde ninguém a incomoda. A savana tem influência
 // negativa para panteras e dois leões lá dentro: mudá-la para lá é uma péssima
 // jogada, e o número tem de o dizer.

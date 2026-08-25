@@ -256,6 +256,29 @@ public class Bridge {
   }
 
   /**
+   * Altera a área de um habitat.
+   *
+   * <p>A área entra na satisfação de cada residente pela parcela
+   * {@code área / população} e é também o que dá ao recinto o seu tamanho no
+   * ecrã: aumentá-la alarga o recinto à vista.
+   *
+   * @param habitatId a chave do habitat
+   * @param area      a nova área
+   * @return se a alteração aconteceu
+   */
+  @JSExport
+  public boolean changeHabitatArea(String habitatId, int area) {
+    if (area < 0)
+      return false;
+    try {
+      _hotel.changeHabitatArea(habitatId, area);
+      return true;
+    } catch (Exception refused) {
+      return false;
+    }
+  }
+
+  /**
    * Transfere um animal para outro habitat — a mutação que a fase 2 fará ao
    * largar o animal.
    *
