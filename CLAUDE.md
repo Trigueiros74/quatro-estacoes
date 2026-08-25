@@ -198,6 +198,29 @@ Orçamento, capacidade dos habitats, acções limitadas por turno, objectivos: s
 elas, isto é um editor bonito com animações. É por isso que existe o `hva-game`
 — e é por isso que a regra de ouro é a regra de ouro.
 
+### ⚠️ A área não vale pontos
+
+**Alargar um recinto que alguém limpa não muda a satisfação global — nem um
+ponto.** Está provado em `hva-core/test/hva/AreaEffectTest.java`:
+
+* cada residente ganha `área / população`, e são `população` residentes, pelo
+  que os animais ganham ao todo exactamente `Δárea`;
+* o trabalho do habitat é `área + 3 × população + limpeza`, e cresce também
+  `Δárea`;
+* esse trabalho reparte-se pelos tratadores do habitat, mas **a soma do que lhes
+  é cobrado é sempre o trabalho inteiro** — mais tratadores repartem-no, não o
+  reduzem.
+
+Sobra uma brecha perversa: um habitat que **ninguém** limpa não cobra o seu
+trabalho a ninguém, e aí a área é ganho puro. A jogada óptima passa a ser
+recintos enormes sem tratador — exactamente o contrário do que um jogo devia
+premiar.
+
+Não é defeito do núcleo: é o que as fórmulas do enunciado dizem. Corrigi-lo é
+regra de jogo, e portanto **matéria do `hva-game`** — provavelmente com o
+trabalho não atribuído a castigar a satisfação global na mesma, ou com um
+tecto de capacidade por recinto.
+
 ### A retroacção já tem sinal
 
 Não é preciso inventar «isto foi bom» ou «isto foi mau»:
