@@ -6,6 +6,8 @@ import org.teavm.jso.JSExport;
 import hva.Animal;
 import hva.Habitat;
 import hva.Hotel;
+import hva.Influence;
+import hva.Species;
 import hva.Tree;
 
 /**
@@ -147,6 +149,25 @@ public class Bridge {
     return habitat == null ? 0 : habitat.getArea();
   }
 
+  /** @return as chaves das espécies conhecidas, separadas por vírgulas. */
+  @JSExport
+  public String getSpeciesIds() {
+    StringBuilder ids = new StringBuilder();
+    for (Species species : _hotel.getAllSpecies())
+      append(ids, species.getId());
+    return ids.toString();
+  }
+
+  /**
+   * @param speciesId a chave da espécie
+   * @return o nome da espécie, ou vazio se não existir
+   */
+  @JSExport
+  public String getSpeciesName(String speciesId) {
+    Species species = _hotel.getSpecies(speciesId);
+    return species == null ? "" : species.getName();
+  }
+
   /**
    * @param habitatId a chave do habitat
    * @return as chaves das árvores implantadas nesse habitat, separadas por
@@ -276,6 +297,83 @@ public class Bridge {
     } catch (Exception refused) {
       return false;
     }
+  }
+
+  /**
+   * Abre um novo habitat.
+   *
+   * @param habitatId a chave do novo habitat
+   * @param name      o nome do habitat
+   * @param area      a área do habitat
+   * @return se o habitat foi criado
+   */
+  @JSExport
+  public boolean registerHabitat(String habitatId, String name, int area) {
+    if (habitatId == null || habitatId.isBlank() || area < 0)
+      return false;
+    try {
+      _hotel.registerHabitat(habitatId.trim(), blankTo(name, habitatId.trim()), area);
+      return true;
+    } catch (Exception refused) {
+      return false;
+    }
+  }
+
+  /**
+   * Altera a adequação de um habitat a uma espécie, que vale ±20 pontos na
+   * satisfação de cada animal dessa espécie ali alojado.
+   *
+   * @param habitatId a chave do habitat
+   * @param speciesId a chave da espécie
+   * @param influence {@code POS}, {@code NEU} ou {@code NEG}
+   * @return se a alteração aconteceu
+   */
+  @JSExport
+  public boolean changeInfluence(String habitatId, String speciesId, String influence) {
+    try {
+      _hotel.changeInfluence(habitatId, speciesId, Influence.valueOf(influence));
+      return true;
+    } catch (Exception refused) {
+      return false;
+    }
+  }
+
+  /**
+   * Planta uma árvore num habitat.
+   *
+   * <p>É a decisão com consequência mais longa do jogo: a árvore acrescenta
+   * trabalho de limpeza que depende da estação e da idade, e a idade só sobe.
+   *
+   * @param habitatId  a chave do habitat
+   * @param treeId     a chave da nova árvore
+   * @param name       o nome da árvore
+   * @param age        a idade em anos
+   * @param difficulty a dificuldade base de limpeza
+   * @param type       {@code PERENE} ou {@code CADUCA}
+   * @return se a árvore foi plantada
+   */
+  @JSExport
+  public boolean plantTree(String habitatId, String treeId, String name,
+      int age, int difficulty, String type) {
+
+    if (treeId == null || treeId.isBlank() || age < 0 || difficulty < 0)
+      return false;
+    try {
+      _hotel.addTreeToHabitat(habitatId, treeId.trim(),
+          blankTo(name, treeId.trim()), age, difficulty, type);
+      return true;
+    } catch (Exception refused) {
+      return false;
+    }
+  }
+
+  /**
+   * @param texto      o texto a usar
+   * @param alternativa o que usar se o texto for vazio
+   * @return o texto sem espaços em volta, ou a alternativa
+   */
+  private static String blankTo(String texto, String alternativa) {
+    return texto == null || texto.isBlank() ? alternativa : texto.trim();
   }
 
   /**

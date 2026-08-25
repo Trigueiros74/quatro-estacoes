@@ -45,7 +45,34 @@ assert.equal(hotel.getTreeAge("BAOBA"), 20);
   assert.equal(hotel.changeHabitatArea("SAVANA", 800), true, "e volta atrás");
   assert.equal(hotel.getHabitatArea("SAVANA"), 800);
   assert.equal(hotel.changeHabitatArea("SAVANA", -5), false, "área negativa é recusada");
-  assert.equal(hotel.changeHabitatArea("DESERTO", 100), false, "recinto inexistente é recusado");
+  assert.equal(hotel.changeHabitatArea("TUNDRA", 100), false, "recinto inexistente é recusado");
+}
+
+// Abrir um recinto novo, mudar-lhe a adequação, plantar-lhe uma árvore.
+{
+  assert.equal(hotel.getSpeciesIds(), "LEAO,PANTERA");
+  assert.equal(hotel.getSpeciesName("LEAO"), "Leão");
+
+  assert.equal(hotel.registerHabitat("DESERTO", "Deserto", 500), true);
+  assert.equal(hotel.getHabitatIds(), "DESERTO,FLORESTA,SAVANA", "por ordem de chave");
+  assert.equal(hotel.registerHabitat("DESERTO", "Outro", 100), false, "chave repetida");
+  assert.equal(hotel.registerHabitat("", "Sem chave", 100), false, "chave vazia");
+
+  assert.equal(hotel.getInfluence("DESERTO", "SHERE"), "NEU");
+  assert.equal(hotel.changeInfluence("DESERTO", "PANTERA", "POS"), true);
+  assert.equal(hotel.getInfluence("DESERTO", "SHERE"), "POS");
+  assert.equal(hotel.changeInfluence("DESERTO", "PANTERA", "ÓPTIMO"), false, "adequação inventada");
+
+  assert.equal(hotel.getTreeIdsIn("DESERTO"), "");
+  assert.equal(hotel.plantTree("DESERTO", "PALMEIRA", "Palmeira", 5, 3, "PERENE"), true);
+  assert.equal(hotel.getTreeIdsIn("DESERTO"), "PALMEIRA");
+  assert.equal(hotel.getTreeType("PALMEIRA"), "PERENE");
+  assert.equal(hotel.plantTree("DESERTO", "CACTO", "Cacto", 5, 3, "SUCULENTA"), false,
+    "tipo de árvore inventado");
+
+  // Um recinto vago com influência positiva é o melhor destino possível.
+  assert.ok(hotel.satisfactionIfMovedTo("SHERE", "DESERTO") > hotel.getGlobalSatisfaction(),
+    "sozinha num recinto que lhe convém, a pantera fica muito melhor");
 }
 
 // A pantera está na floresta, onde ninguém a incomoda. A savana tem influência
@@ -57,14 +84,14 @@ assert.equal(hotel.getHabitatOf("SHERE"), "FLORESTA");
 const previsto = hotel.satisfactionIfMovedTo("SHERE", "SAVANA");
 assert.ok(previsto < hotel.getGlobalSatisfaction(), "a má jogada tem de aparecer como má");
 assert.equal(hotel.getHabitatOf("SHERE"), "FLORESTA", "pré-visualizar não mexe em nada");
-assert.equal(hotel.satisfactionIfMovedTo("SHERE", "DESERTO"), hotel.getGlobalSatisfaction(),
+assert.equal(hotel.satisfactionIfMovedTo("SHERE", "TUNDRA"), hotel.getGlobalSatisfaction(),
   "destino inexistente não promete nada");
 assert.equal(hotel.transferAnimal("SHERE", "SAVANA"), true, "transferência válida");
 assert.equal(hotel.getHabitatOf("SHERE"), "SAVANA");
 assert.equal(hotel.getGlobalSatisfaction(), 39, "satisfação depois da má jogada");
 assert.equal(previsto, 39, "a pré-visualização cumpriu o que prometeu");
 
-assert.equal(hotel.transferAnimal("SHERE", "DESERTO"), false, "destino inexistente");
+assert.equal(hotel.transferAnimal("SHERE", "TUNDRA"), false, "destino inexistente");
 assert.equal(hotel.transferAnimal("DUMBO", "SAVANA"), false, "animal inexistente");
 assert.equal(hotel.getHabitatOf("SHERE"), "SAVANA", "recusa não mexe em nada");
 

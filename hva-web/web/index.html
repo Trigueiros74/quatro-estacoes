@@ -285,7 +285,9 @@
     font-size: 0.74rem;
   }
 
-  .menu-form input { width: 7em; font-variant-numeric: tabular-nums; }
+  .menu-form input { width: 6em; font-variant-numeric: tabular-nums; }
+  .menu-form input.wide { width: 9em; font-variant-numeric: normal; }
+  .menu-form select { max-width: 22em; }
   .menu-form select:focus-visible,
   .menu-form input:focus-visible { outline: 2px solid #f2c14e; outline-offset: 1px; }
 
@@ -1372,7 +1374,10 @@
         titulo: "Recintos",
         volta: "raiz",
         opcoes: [
-          { rotulo: "Mudar a área", pede: "area" }
+          { rotulo: "Abrir recinto", pede: "novoRecinto" },
+          { rotulo: "Mudar a área", pede: "area" },
+          { rotulo: "Adequação a uma espécie", pede: "adequacao" },
+          { rotulo: "Plantar árvore", pede: "arvore" }
         ]
       }
     };
@@ -1396,10 +1401,91 @@
             return dizer("Área recusada.", true);
           planear();
           assentar();
-          dizer(hotel.getHabitatName(valores.habitat) + " passou a " + valores.area + " m².");
+          dizer(hotel.getHabitatName(valores.habitat) + " passou a " + valores.area + " m²." +
+            " A satisfação não mexeu: o espaço dado aos animais é o trabalho dado a quem limpa.");
+        }
+      },
+
+      novoRecinto: {
+        titulo: "Abrir um recinto",
+        volta: "recintos",
+        nota: "Um recinto vago é o melhor destino que um animal pode ter.",
+        campos: [
+          { nome: "chave", rotulo: "chave", tipo: "texto", largo: true },
+          { nome: "nome", rotulo: "nome", tipo: "texto", largo: true },
+          { nome: "area", rotulo: "área (m²)", tipo: "numero", minimo: 1, valor: function () { return 400; } }
+        ],
+        confirmar: "Abrir",
+        faz: function (valores, dizer) {
+          if (!hotel.registerHabitat(valores.chave, valores.nome, valores.area))
+            return dizer("Recusado: falta a chave, ou já existe um recinto com ela.", true);
+          planear();
+          assentar();
+          abrir("novoRecinto",
+            hotel.getHabitatName(valores.chave) + " abriu com " + valores.area + " m².");
+        }
+      },
+
+      adequacao: {
+        titulo: "Adequação de um recinto a uma espécie",
+        volta: "recintos",
+        nota: "Vale ±20 pontos na satisfação de cada animal dessa espécie ali alojado.",
+        campos: [
+          { nome: "habitat", rotulo: "recinto", tipo: "escolha", opcoes: habitatsComNome },
+          { nome: "especie", rotulo: "espécie", tipo: "escolha", opcoes: especiesComNome },
+          { nome: "influencia", rotulo: "adequação", tipo: "escolha", opcoes: function () {
+            return [
+              { valor: "POS", rotulo: "boa (+20)" },
+              { valor: "NEU", rotulo: "indiferente" },
+              { valor: "NEG", rotulo: "má (−20)" }
+            ];
+          } }
+        ],
+        confirmar: "Definir",
+        faz: function (valores, dizer) {
+          if (!hotel.changeInfluence(valores.habitat, valores.especie, valores.influencia))
+            return dizer("Adequação recusada.", true);
+          assentar();
+          dizer(hotel.getSpeciesName(valores.especie) + " em " +
+            hotel.getHabitatName(valores.habitat) + ": adequação definida.");
+        }
+      },
+
+      arvore: {
+        titulo: "Plantar uma árvore",
+        volta: "recintos",
+        nota: "A decisão mais duradoura do jogo: a idade só sobe, e o trabalho com ela.",
+        campos: [
+          { nome: "habitat", rotulo: "recinto", tipo: "escolha", opcoes: habitatsComNome },
+          { nome: "chave", rotulo: "chave", tipo: "texto", largo: true },
+          { nome: "nome", rotulo: "nome", tipo: "texto", largo: true },
+          { nome: "tipo", rotulo: "folha", tipo: "escolha", opcoes: function () {
+            return [
+              { valor: "CADUCA", rotulo: "caduca — nada no inverno, cinco vezes no outono" },
+              { valor: "PERENE", rotulo: "perene — sempre igual, o dobro no inverno" }
+            ];
+          } },
+          { nome: "idade", rotulo: "idade (anos)", tipo: "numero", minimo: 0, valor: function () { return 1; } },
+          { nome: "dificuldade", rotulo: "dificuldade", tipo: "numero", minimo: 0, valor: function () { return 2; } }
+        ],
+        confirmar: "Plantar",
+        faz: function (valores, dizer) {
+          if (!hotel.plantTree(valores.habitat, valores.chave, valores.nome,
+              valores.idade, valores.dificuldade, valores.tipo))
+            return dizer("Recusado: falta a chave, ou já existe uma árvore com ela.", true);
+          assentar();
+          abrir("arvore", hotel.getTreeName(valores.chave) + " plantada. Dá já " +
+            (hotel.getCleaningEffort(valores.chave) / 100).toFixed(2) + " de trabalho a quem limpa.");
         }
       }
     };
+
+    /** As chaves das espécies com o nome por que se apresentam. */
+    function especiesComNome() {
+      return hotel.getSpeciesIds().split(",").filter(Boolean).map(function (id) {
+        return { valor: id, rotulo: hotel.getSpeciesName(id) };
+      });
+    }
 
     /** As chaves dos recintos com o nome por que se apresentam. */
     function habitatsComNome() {
@@ -1415,13 +1501,19 @@
 
     var ecraCorrente = "raiz";
 
-    /** Mostra um ecrã de menu, ou um formulário se o nome for de um pedido. */
-    function abrir(nome) {
+    /**
+     * Mostra um ecrã de menu, ou um formulário se o nome for de um pedido.
+     *
+     * @param mensagem o que dizer ao chegar, em vez da nota habitual — é assim
+     *                 que uma acção bem sucedida se anuncia no formulário que
+     *                 acabou de ser reconstruído para a acção seguinte
+     */
+    function abrir(nome, mensagem) {
       ecraCorrente = nome;
       menuEl.textContent = "";
 
       if (PEDIDOS[nome]) {
-        montarPedido(PEDIDOS[nome]);
+        montarPedido(PEDIDOS[nome], mensagem);
         return;
       }
 
@@ -1462,7 +1554,7 @@
     }
 
     /** Monta um formulário a partir da sua descrição. */
-    function montarPedido(pedido) {
+    function montarPedido(pedido, mensagem) {
       menuEl.appendChild(titulo(pedido.titulo));
 
       var formulario = document.createElement("div");
@@ -1486,8 +1578,9 @@
           });
         } else {
           entrada = document.createElement("input");
-          entrada.type = "number";
+          entrada.type = campo.tipo === "texto" ? "text" : "number";
           if (campo.minimo !== undefined) entrada.min = campo.minimo;
+          if (campo.largo) entrada.className = "wide";
         }
 
         entrada.id = "campo-" + campo.nome;
@@ -1520,7 +1613,7 @@
 
       var nota = document.createElement("p");
       nota.className = "menu-note";
-      nota.textContent = pedido.nota || "";
+      nota.textContent = mensagem || pedido.nota || "";
 
       function dizer(texto, mal) {
         nota.textContent = texto;
