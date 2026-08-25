@@ -577,8 +577,17 @@
     var mundo = { recintos: {}, largura: 0, altura: 0 };
     var escala = 3;
 
-    /** Onde cada animal está pousado, em píxeis lógicos. */
+    /** Onde cada animal deve estar, em píxeis lógicos: o destino da caminhada. */
     var lugares = {};
+
+    /** Onde cada animal está de facto, a caminho do seu lugar. */
+    var andantes = {};
+
+    /** As áreas que respondem ao rato, para acompanharem quem caminha. */
+    var alvos = {};
+
+    /** Velocidade de marcha, em píxeis lógicos por milissegundo. */
+    var VELOCIDADE = 0.06;
 
     /** O cenário parado — chão e cercas — desenhado uma vez e reaproveitado. */
     var fundo = document.createElement("canvas");
@@ -600,12 +609,13 @@
         if (!(especie in pelagemDaEspecie)) {
           var indice = Object.keys(pelagemDaEspecie).length % PELAGENS.length;
           pelagemDaEspecie[especie] = PELAGENS[indice];
-          retratos[especie] = retratar(SILHUETA, PELAGENS[indice],
-            LARGURA_BICHO, ALTURA_BICHO);
+          var virado = retratar(SILHUETA, PELAGENS[indice], LARGURA_BICHO, ALTURA_BICHO);
+          retratos[especie] = { direita: virado, esquerda: espelhar(virado) };
         }
       });
 
       arvores = arvoredo();
+      andantes = {};
 
       planear();
       scoreEl.classList.remove("up", "down");
@@ -633,6 +643,19 @@
         }
       });
 
+      return tela;
+    }
+
+    /** O mesmo retrato virado ao contrário, para o bicho olhar para onde anda. */
+    function espelhar(retrato) {
+      var tela = document.createElement("canvas");
+      tela.width = retrato.width;
+      tela.height = retrato.height;
+      var pincel = tela.getContext("2d");
+      pincel.imageSmoothingEnabled = false;
+      pincel.translate(retrato.width, 0);
+      pincel.scale(-1, 1);
+      pincel.drawImage(retrato, 0, 0);
       return tela;
     }
 
@@ -876,16 +899,21 @@
       });
 
       animais().forEach(function (animal, ordem) {
-        var lugar = lugares[animal];
-        if (!lugar) return;
+        var andante = andantes[animal];
+        if (!andante) return;
 
-        var retrato = retratos[hotel.getSpeciesOf(animal)];
-        var balanco = semAnimacao
-          ? 0
-          : Math.round(Math.sin(instante / 420 + ordem * 1.7)) === 1 ? -1 : 0;
+        var par = retratos[hotel.getSpeciesOf(animal)];
+        var retrato = andante.virado < 0 ? par.esquerda : par.direita;
 
-        var x = Math.round(lugar.x - LARGURA_BICHO / 2);
-        var y = Math.round(lugar.y - ALTURA_BICHO / 2) + balanco;
+        // Parado, o bicho respira devagar; a caminhar, salta ao passo.
+        var balanco = 0;
+        if (!semAnimacao) {
+          var ritmo = andante.aCaminhar ? instante / 90 : instante / 420 + ordem * 1.7;
+          balanco = Math.sin(ritmo) > (andante.aCaminhar ? 0 : 0.5) ? -1 : 0;
+        }
+
+        var x = Math.round(andante.x - LARGURA_BICHO / 2);
+        var y = Math.round(andante.y - ALTURA_BICHO / 2) + balanco;
 
         // A sombra assenta o bicho no chão em vez de o deixar a flutuar.
         ctx.fillStyle = "rgba(30, 34, 24, 0.22)";
@@ -902,10 +930,62 @@
     }
 
     var relogio = null;
+    var instanteAnterior = 0;
 
     function animar(instante) {
+      var decorrido = Math.min(64, instante - instanteAnterior || 16);
+      instanteAnterior = instante;
+      caminhar(decorrido);
       pintarQuadro(instante);
       relogio = window.requestAnimationFrame(animar);
+    }
+
+    /**
+     * Aproxima cada animal do lugar que lhe cabe.
+     *
+     * Um animal transferido não salta para o recinto novo: atravessa o mundo a
+     * pé, virado para onde vai. É a mesma transferência do domínio — só que
+     * demora o tempo de a ver acontecer.
+     */
+    function caminhar(decorrido) {
+      animais().forEach(function (animal) {
+        var destino = lugares[animal];
+        if (!destino) return;
+
+        var andante = andantes[animal];
+        if (!andante || semAnimacao) {
+          andantes[animal] = { x: destino.x, y: destino.y, virado: 1, aCaminhar: false };
+          acompanhar(animal);
+          return;
+        }
+
+        var dx = destino.x - andante.x;
+        var dy = destino.y - andante.y;
+        var distancia = Math.sqrt(dx * dx + dy * dy);
+
+        if (distancia < 0.5) {
+          andante.x = destino.x;
+          andante.y = destino.y;
+          if (andante.aCaminhar) { andante.aCaminhar = false; acompanhar(animal); }
+          return;
+        }
+
+        var passo = Math.min(distancia, VELOCIDADE * decorrido);
+        andante.x += dx / distancia * passo;
+        andante.y += dy / distancia * passo;
+        andante.aCaminhar = true;
+        if (Math.abs(dx) > 0.5) andante.virado = dx < 0 ? -1 : 1;
+        acompanhar(animal);
+      });
+    }
+
+    /** Leva a área que responde ao rato com o animal que caminha. */
+    function acompanhar(animal) {
+      var botao = alvos[animal];
+      var andante = andantes[animal];
+      if (!botao || !andante) return;
+      botao.style.left = emPixeis(andante.x) + "px";
+      botao.style.top = emPixeis(andante.y) + "px";
     }
 
     /* ------------------------------------------------------ o que está por cima */
@@ -933,8 +1013,12 @@
         pousar(id, porRecinto[id], plantar(id));
       });
 
+      alvos = {};
       animais().forEach(function (animal) {
-        overlayEl.appendChild(alvo(animal));
+        var botao = alvo(animal);
+        alvos[animal] = botao;
+        overlayEl.appendChild(botao);
+        acompanhar(animal);
       });
 
       preverParaTodos(seleccionado);
