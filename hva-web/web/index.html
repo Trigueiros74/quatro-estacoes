@@ -231,6 +231,36 @@
   .drop.armed { opacity: 1; }
   .drop.target { background: rgba(255, 255, 255, 0.16); }
 
+  /* O anúncio da estação, quando o ano vira. */
+  .herald {
+    position: absolute;
+    left: 50%;
+    top: 42%;
+    transform: translate(-50%, -50%);
+    padding: 0.35em 1.4em;
+    background: rgba(24, 20, 14, 0.86);
+    border: 2px solid #f2e7d2;
+    border-radius: 2px;
+    color: #f2e7d2;
+    font-family: var(--data);
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  .herald.show { animation: herald 1800ms ease-out; }
+
+  @keyframes herald {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.94); }
+    12%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    72%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -58%) scale(1); }
+  }
+
   /* ------------------------------------------------------------- instrumento */
 
   .instrument {
@@ -370,6 +400,7 @@
     <div class="world" id="world">
       <canvas id="canvas"></canvas>
       <div class="overlay" id="overlay"></div>
+      <div class="herald" id="herald"></div>
     </div>
   </div>
 
@@ -451,6 +482,22 @@
 
     var CERCA = "#7a5c3a";
     var CERCA_SOMBRA = "#523c25";
+
+    /*
+     * O ar de cada estação. O outono é o mais carregado de propósito: é a
+     * estação em que o esforço das caducas quintuplica, e a folhada a cair é o
+     * aviso de que o tratador está a afogar-se.
+     */
+    var AR = {
+      SPRING: { quantas: 14, queda: 0.008, deriva: 0.9, tamanho: 2,
+                cores: ["#f6e7f2", "#ffffff", "#e4dc74"] },
+      SUMMER: { quantas: 8,  queda: 0.003, deriva: 1.4, tamanho: 1,
+                cores: ["#f8f2c8", "#ffffff"] },
+      FALL:   { quantas: 34, queda: 0.016, deriva: 1.1, tamanho: 2,
+                cores: ["#c8792f", "#a8552a", "#d8a24e"] },
+      WINTER: { quantas: 44, queda: 0.020, deriva: 0.5, tamanho: 2,
+                cores: ["#ffffff", "#eaf2f6", "#d7e4ea"] }
+    };
 
     /* --------------------------------------------------------------- bichos */
 
@@ -562,6 +609,7 @@
     var seasonEl = document.getElementById("season-label");
     var reportEl = document.getElementById("report");
     var hintEl = document.getElementById("hint");
+    var heraldEl = document.getElementById("herald");
 
     var hotel = null;
     var satisfacao = 0;
@@ -588,6 +636,9 @@
 
     /** Velocidade de marcha, em píxeis lógicos por milissegundo. */
     var VELOCIDADE = 0.06;
+
+    /** O que anda no ar: pétalas, folhas, neve. */
+    var flutuantes = [];
 
     /** O cenário parado — chão e cercas — desenhado uma vez e reaproveitado. */
     var fundo = document.createElement("canvas");
@@ -927,6 +978,13 @@
           ctx.strokeRect(x - 1.5, y - 1.5, LARGURA_BICHO + 3, ALTURA_BICHO + 3);
         }
       });
+
+      // O ar por cima de tudo: a folhada do outono e a neve do inverno passam
+      // à frente dos bichos.
+      flutuantes.forEach(function (grao) {
+        ctx.fillStyle = grao.cor;
+        ctx.fillRect(Math.round(grao.x), Math.round(grao.y), grao.tamanho, grao.tamanho);
+      });
     }
 
     var relogio = null;
@@ -936,6 +994,7 @@
       var decorrido = Math.min(64, instante - instanteAnterior || 16);
       instanteAnterior = instante;
       caminhar(decorrido);
+      soprar(decorrido, instante);
       pintarQuadro(instante);
       relogio = window.requestAnimationFrame(animar);
     }
@@ -979,6 +1038,44 @@
       });
     }
 
+    /** Enche o ar conforme a estação. */
+    function semear() {
+      var ar = AR[hotel.getSeason()];
+      flutuantes = [];
+      if (semAnimacao) return;
+
+      for (var i = 0; i < ar.quantas; i++) {
+        flutuantes.push({
+          x: Math.random() * mundo.largura * AZULEJO,
+          y: Math.random() * mundo.altura * AZULEJO,
+          fase: Math.random() * Math.PI * 2,
+          cor: ar.cores[i % ar.cores.length],
+          tamanho: ar.tamanho
+        });
+      }
+    }
+
+    /** Faz cair o que anda no ar, dando a volta por cima quando chega ao fundo. */
+    function soprar(decorrido, instante) {
+      if (!flutuantes.length) return;
+
+      var ar = AR[hotel.getSeason()];
+      var fundoDoMundo = mundo.altura * AZULEJO;
+      var larguraDoMundo = mundo.largura * AZULEJO;
+
+      flutuantes.forEach(function (grao) {
+        grao.y += ar.queda * decorrido;
+        grao.x += Math.sin(instante / 700 + grao.fase) * ar.deriva * decorrido * 0.02;
+
+        if (grao.y > fundoDoMundo) {
+          grao.y -= fundoDoMundo;
+          grao.x = Math.random() * larguraDoMundo;
+        }
+        if (grao.x < 0) grao.x += larguraDoMundo;
+        if (grao.x > larguraDoMundo) grao.x -= larguraDoMundo;
+      });
+    }
+
     /** Leva a área que responde ao rato com o animal que caminha. */
     function acompanhar(animal) {
       var botao = alvos[animal];
@@ -998,6 +1095,7 @@
 
       ajustarCanvas();
       pintarFundo();
+      semear();
 
       var porRecinto = {};
       habitats().forEach(function (id) { porRecinto[id] = []; });
@@ -1172,6 +1270,15 @@
     function avancarEstacao() {
       hotel.nextSeason();
       assentar();
+      anunciar(PALETAS[hotel.getSeason()].nome);
+    }
+
+    /** Anuncia a estação que entrou. */
+    function anunciar(estacao) {
+      heraldEl.textContent = estacao;
+      heraldEl.classList.remove("show");
+      void heraldEl.offsetWidth;
+      heraldEl.classList.add("show");
     }
 
     /** Relê a satisfação, redesenha e anima a diferença. */
