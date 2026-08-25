@@ -6,6 +6,7 @@ import org.teavm.jso.JSExport;
 import hva.Animal;
 import hva.Habitat;
 import hva.Hotel;
+import hva.Tree;
 
 /**
  * A fronteira entre o domínio e a interface: o que o JavaScript pode chamar.
@@ -144,6 +145,79 @@ public class Bridge {
   public int getHabitatArea(String habitatId) {
     Habitat habitat = _hotel.getHabitat(habitatId);
     return habitat == null ? 0 : habitat.getArea();
+  }
+
+  /**
+   * @param habitatId a chave do habitat
+   * @return as chaves das árvores implantadas nesse habitat, separadas por
+   *         vírgulas
+   */
+  @JSExport
+  public String getTreeIdsIn(String habitatId) {
+    Habitat habitat = _hotel.getHabitat(habitatId);
+    if (habitat == null)
+      return "";
+    StringBuilder ids = new StringBuilder();
+    for (Tree tree : habitat.getTrees())
+      append(ids, tree.getId());
+    return ids.toString();
+  }
+
+  /**
+   * @param treeId a chave da árvore
+   * @return o nome da árvore, ou vazio se não existir
+   */
+  @JSExport
+  public String getTreeName(String treeId) {
+    Tree tree = _hotel.getTree(treeId);
+    return tree == null ? "" : tree.getName();
+  }
+
+  /**
+   * @param treeId a chave da árvore
+   * @return {@code PERENE} ou {@code CADUCA}, ou vazio se não existir
+   */
+  @JSExport
+  public String getTreeType(String treeId) {
+    Tree tree = _hotel.getTree(treeId);
+    return tree == null ? "" : tree.getTreeType();
+  }
+
+  /**
+   * O que a árvore está a fazer nesta estação. É daqui que a interface tira o
+   * aspecto da copa: a gerar folhas, com folhas, a largá-las, ou despida.
+   *
+   * @param treeId a chave da árvore
+   * @return {@code GERARFOLHAS}, {@code COMFOLHAS}, {@code LARGARFOLHAS} ou
+   *         {@code SEMFOLHAS}, ou vazio se não existir
+   */
+  @JSExport
+  public String getBiologicalCycle(String treeId) {
+    Tree tree = _hotel.getTree(treeId);
+    return tree == null ? "" : tree.getBiologicalCycle();
+  }
+
+  /**
+   * @param treeId a chave da árvore
+   * @return a idade da árvore em anos, ou zero se não existir
+   */
+  @JSExport
+  public int getTreeAge(String treeId) {
+    Tree tree = _hotel.getTree(treeId);
+    return tree == null ? 0 : tree.getAge();
+  }
+
+  /**
+   * O trabalho que a árvore dá a limpar nesta estação — o único caminho por
+   * onde a passagem do tempo mexe na satisfação global.
+   *
+   * @param treeId a chave da árvore
+   * @return o esforço de limpeza, em centésimos inteiros
+   */
+  @JSExport
+  public int getCleaningEffort(String treeId) {
+    Tree tree = _hotel.getTree(treeId);
+    return tree == null ? 0 : (int) Math.round(tree.getCleaningEffort() * 100);
   }
 
   /**

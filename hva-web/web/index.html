@@ -484,6 +484,63 @@
     var ALTURA_BICHO = 12;
 
     /*
+     * A árvore, 16 de largo por 14 de alto, ancorada pela base do tronco.
+     *
+     *   o  contorno    f  folhagem    h  folhagem clara
+     *   t  tronco      k  tronco escuro
+     */
+    var COPA = [
+      ".....oooooo.....",
+      "...oofffffffoo..",
+      "..offffffffffo..",
+      ".offffffffffffo.",
+      "offffffffffffffo",
+      "offffffffffffffo",
+      ".offffffffffffo.",
+      "..offffffffffo..",
+      "....oofffffoo...",
+      "......ottto.....",
+      "......otkto.....",
+      "......otkto.....",
+      "......otkto.....",
+      ".....oottkoo...."
+    ];
+
+    /** A mesma árvore despida: só os ramos e o tronco. */
+    var RAMOS = [
+      ".......o........",
+      "....o..o..o.....",
+      ".....o.o.o......",
+      "......ooo.......",
+      "...o...o...o....",
+      "....o..o..o.....",
+      ".....o.o.o......",
+      "......ooo.......",
+      "......ooo.......",
+      "......ottto.....",
+      "......otkto.....",
+      "......otkto.....",
+      "......otkto.....",
+      ".....oottkoo...."
+    ];
+
+    var LARGURA_ARVORE = 16;
+    var ALTURA_ARVORE = 14;
+
+    /*
+     * A copa pinta-se pelo ciclo biológico, que é o próprio domínio a dizer o
+     * que a árvore está a fazer nesta estação — não uma decisão da interface.
+     */
+    var FOLHAGENS = {
+      GERARFOLHAS:  { o: "#3d5c28", f: "#7fb054", h: "#a3cd75" },
+      COMFOLHAS:    { o: "#22401a", f: "#4a7a32", h: "#659449" },
+      LARGARFOLHAS: { o: "#6b3a15", f: "#b0722a", h: "#d09642" },
+      SEMFOLHAS:    null
+    };
+
+    var TRONCO = { o: "#33240f", t: "#6b4a2a", k: "#4a3119" };
+
+    /*
      * As pelagens são poucas e escolhidas a dedo, e não geradas por uma volta
      * ao círculo cromático: um leão verde-limão estragaria a cena. Cada espécie
      * fica com a seguinte da lista, pela ordem em que aparece.
@@ -511,6 +568,10 @@
     var seleccionado = null;
     var pelagemDaEspecie = {};
     var retratos = {};
+    var arvores = {};
+
+    /** Onde cada árvore está plantada, em píxeis lógicos. */
+    var arvoredoPlantado = [];
 
     /** Os recintos em coordenadas de azulejo, e o tamanho do mundo. */
     var mundo = { recintos: {}, largura: 0, altura: 0 };
@@ -539,9 +600,12 @@
         if (!(especie in pelagemDaEspecie)) {
           var indice = Object.keys(pelagemDaEspecie).length % PELAGENS.length;
           pelagemDaEspecie[especie] = PELAGENS[indice];
-          retratos[especie] = retratar(PELAGENS[indice]);
+          retratos[especie] = retratar(SILHUETA, PELAGENS[indice],
+            LARGURA_BICHO, ALTURA_BICHO);
         }
       });
+
+      arvores = arvoredo();
 
       planear();
       scoreEl.classList.remove("up", "down");
@@ -553,16 +617,16 @@
     function animais() { return hotel.getAnimalIds().split(","); }
     function habitats() { return hotel.getHabitatIds().split(","); }
 
-    /** Pinta a silhueta com uma pelagem, uma vez, para depois só se copiar. */
-    function retratar(pelagem) {
+    /** Pinta uma matriz de caracteres com uma paleta, uma vez, para se copiar. */
+    function retratar(desenho, paleta, largura, altura) {
       var tela = document.createElement("canvas");
-      tela.width = LARGURA_BICHO;
-      tela.height = ALTURA_BICHO;
+      tela.width = largura;
+      tela.height = altura;
       var pincel = tela.getContext("2d");
 
-      SILHUETA.forEach(function (linha, y) {
+      desenho.forEach(function (linha, y) {
         for (var x = 0; x < linha.length; x++) {
-          var cor = pelagem[linha[x]];
+          var cor = paleta[linha[x]];
           if (!cor) continue;
           pincel.fillStyle = cor;
           pincel.fillRect(x, y, 1, 1);
@@ -570,6 +634,24 @@
       });
 
       return tela;
+    }
+
+    /** Uma árvore por ciclo biológico; a despida usa a silhueta dos ramos. */
+    function arvoredo() {
+      var arvores = {};
+      Object.keys(FOLHAGENS).forEach(function (ciclo) {
+        var folhagem = FOLHAGENS[ciclo];
+        var paleta = {
+          o: folhagem ? folhagem.o : TRONCO.o,
+          f: folhagem ? folhagem.f : null,
+          h: folhagem ? folhagem.h : null,
+          t: TRONCO.t,
+          k: TRONCO.k
+        };
+        arvores[ciclo] = retratar(folhagem ? COPA : RAMOS, paleta,
+          LARGURA_ARVORE, ALTURA_ARVORE);
+      });
+      return arvores;
     }
 
     /* ---------------------------------------------------------- o traçado */
@@ -608,23 +690,49 @@
     }
 
     /**
+     * Planta as árvores encostadas ao fundo do recinto, para não disputarem o
+     * meio com os animais.
+     *
+     * @return a altura que fica reservada às árvores
+     */
+    function plantar(id) {
+      var lista = hotel.getTreeIdsIn(id);
+      if (!lista) return 0;
+
+      var recinto = mundo.recintos[id];
+      var plantadas = lista.split(",");
+      var largura = recinto.largura * AZULEJO;
+
+      plantadas.forEach(function (arvore, ordem) {
+        arvoredoPlantado.push({
+          id: arvore,
+          x: recinto.x * AZULEJO + largura * (ordem + 0.5) / plantadas.length,
+          y: recinto.y * AZULEJO + ALTURA_ARVORE
+        });
+      });
+
+      return ALTURA_ARVORE;
+    }
+
+    /**
      * Espalha os residentes pelo interior do recinto, numa grelha que se aperta
      * à medida que eles chegam. Amontoar já custa pontos na fórmula; assim
      * também se vê.
      */
-    function pousar(id, residentes) {
+    function pousar(id, residentes, reservado) {
       if (!residentes.length) return;
 
       var recinto = mundo.recintos[id];
       var largura = recinto.largura * AZULEJO;
-      var altura = recinto.altura * AZULEJO;
+      var altura = Math.max(ALTURA_BICHO, recinto.altura * AZULEJO - reservado);
+      var topo = recinto.y * AZULEJO + reservado;
       var colunas = Math.max(1, Math.round(Math.sqrt(residentes.length * largura / altura)));
       var linhas = Math.ceil(residentes.length / colunas);
 
       residentes.forEach(function (animal, ordem) {
         lugares[animal] = {
           x: recinto.x * AZULEJO + largura * ((ordem % colunas) + 0.5) / colunas,
-          y: recinto.y * AZULEJO + altura * (Math.floor(ordem / colunas) + 0.5) / linhas
+          y: topo + altura * (Math.floor(ordem / colunas) + 0.5) / linhas
         };
       });
     }
@@ -755,6 +863,18 @@
     function pintarQuadro(instante) {
       ctx.drawImage(fundo, 0, 0);
 
+      // As árvores primeiro, encostadas ao fundo do recinto: os animais ficam
+      // à frente delas, como devem.
+      arvoredoPlantado.forEach(function (plantada) {
+        var copa = arvores[hotel.getBiologicalCycle(plantada.id)];
+        if (!copa) return;
+        var x = Math.round(plantada.x - LARGURA_ARVORE / 2);
+        var y = Math.round(plantada.y - ALTURA_ARVORE);
+        ctx.fillStyle = "rgba(30, 34, 24, 0.18)";
+        ctx.fillRect(x + 4, y + ALTURA_ARVORE - 1, LARGURA_ARVORE - 8, 2);
+        ctx.drawImage(copa, x, y);
+      });
+
       animais().forEach(function (animal, ordem) {
         var lugar = lugares[animal];
         if (!lugar) return;
@@ -806,10 +926,11 @@
       });
 
       overlayEl.textContent = "";
+      arvoredoPlantado = [];
       habitats().forEach(function (id) {
         overlayEl.appendChild(tabuleta(id));
         overlayEl.appendChild(zonaDeLargada(id));
-        pousar(id, porRecinto[id]);
+        pousar(id, porRecinto[id], plantar(id));
       });
 
       animais().forEach(function (animal) {

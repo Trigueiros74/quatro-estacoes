@@ -26,6 +26,13 @@ assert.equal(hotel.getSpeciesOf("SHERE"), "PANTERA");
 assert.equal(hotel.getInfluence("SAVANA", "SHERE"), "NEG", "a savana não é sítio para panteras");
 assert.equal(hotel.getInfluence("FLORESTA", "SHERE"), "NEU", "a floresta é indiferente");
 
+// As árvores, e o ciclo biológico de onde a interface tira o aspecto da copa.
+assert.equal(hotel.getTreeIdsIn("SAVANA"), "ACACIA,BAOBA", "árvores por ordem de chave");
+assert.equal(hotel.getTreeType("BAOBA"), "CADUCA");
+assert.equal(hotel.getTreeType("ACACIA"), "PERENE");
+assert.equal(hotel.getBiologicalCycle("BAOBA"), "GERARFOLHAS", "na primavera todas geram folhas");
+assert.equal(hotel.getTreeAge("BAOBA"), 20);
+
 // A pantera está na floresta, onde ninguém a incomoda. A savana tem influência
 // negativa para panteras e dois leões lá dentro: mudá-la para lá é uma péssima
 // jogada, e o número tem de o dizer.
@@ -54,5 +61,15 @@ for (let i = 0; i < 4; i++) {
 }
 assert.deepEqual(year, [["SUMMER", 7], ["FALL", -89], ["WINTER", 61], ["SPRING", 38]],
   "o ano inteiro, com o Outono no fundo");
+
+// A caduca despe-se no inverno e não dá trabalho nenhum; a perene é que o dá.
+hotel.nextSeason();
+hotel.nextSeason();
+hotel.nextSeason();
+assert.equal(hotel.getSeason(), "WINTER");
+assert.equal(hotel.getBiologicalCycle("BAOBA"), "SEMFOLHAS");
+assert.equal(hotel.getCleaningEffort("BAOBA"), 0, "uma caduca despida não dá trabalho");
+assert.equal(hotel.getBiologicalCycle("ACACIA"), "LARGARFOLHAS");
+assert.ok(hotel.getCleaningEffort("ACACIA") > 0, "a perene é que trabalha no inverno");
 
 console.log("a ponte responde: " + year.length + " estações, leitura e mutação a partir de JavaScript.");
