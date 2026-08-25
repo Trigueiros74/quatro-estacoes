@@ -23,12 +23,6 @@
     /* A estação corrente pinta o acento da página; o guião actualiza-a. */
     --season: var(--spring);
 
-    /* Uma cor por espécie, atribuída pela ordem em que aparecem. */
-    --species-0: #b4632a;
-    --species-1: #4a5f7a;
-    --species-2: #6a7f3c;
-    --species-3: #8a4a6b;
-
     --display: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
     --body: "Source Serif 4", Georgia, serif;
     --data: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -53,11 +47,6 @@
       --summer: #d9a844;
       --fall: #d1764a;
       --winter: #6aa3c9;
-
-      --species-0: #d98a4e;
-      --species-1: #7f9bbd;
-      --species-2: #a3bd68;
-      --species-3: #c281a2;
     }
   }
 
@@ -76,11 +65,6 @@
     --summer: #d9a844;
     --fall: #d1764a;
     --winter: #6aa3c9;
-
-    --species-0: #d98a4e;
-    --species-1: #7f9bbd;
-    --species-2: #a3bd68;
-    --species-3: #c281a2;
   }
 
   * { box-sizing: border-box; }
@@ -139,6 +123,113 @@
   }
 
   .standfirst { margin: 0; color: var(--muted); text-wrap: pretty; }
+
+  /* -------------------------------------------------------------- o mundo */
+
+  /*
+   * O mundo é uma cena desenhada e tem paleta própria: não segue o tema claro
+   * ou escuro do leitor, tal como uma imagem não segue.
+   */
+  .world {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: #6f8f5c;
+  }
+
+  .world canvas { display: block; image-rendering: pixelated; }
+
+  .overlay { position: absolute; inset: 0; pointer-events: none; }
+  .overlay > * { pointer-events: auto; }
+
+  /* A tabuleta de cada recinto, encostada ao canto superior da cerca. */
+  .sign {
+    position: absolute;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+    padding: 0.15em 0.5em;
+    background: #3b2f21;
+    color: #f0e2c8;
+    border: 1px solid #23190f;
+    border-radius: 2px;
+    font-family: var(--data);
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    transform: translateY(-100%);
+  }
+
+  .sign b { font-weight: 600; }
+  .sign span { opacity: 0.7; }
+
+  /*
+   * O animal desenhado está no canvas; isto é só a área que responde ao rato e
+   * ao teclado, mais a chapa com o nome por baixo dele.
+   */
+  .animal {
+    position: absolute;
+    padding: 0;
+    background: none;
+    border: 0;
+    border-radius: 3px;
+    cursor: grab;
+    transform: translate(-50%, -50%);
+  }
+
+  .animal:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  .animal.held { cursor: grabbing; }
+
+  .plate {
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%);
+    padding: 0.1em 0.4em;
+    background: rgba(24, 20, 14, 0.82);
+    color: #f2e7d2;
+    border-radius: 2px;
+    font-family: var(--data);
+    font-size: 0.58rem;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .animal.picked .plate { background: #f2e7d2; color: #1a150e; }
+
+  /* Enquanto se segura um animal, cada recinto diz o que a mudança custaria. */
+  .forecast {
+    position: absolute;
+    padding: 0.15em 0.5em;
+    border-radius: 2px;
+    font-family: var(--data);
+    font-size: 0.68rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: #fff;
+    pointer-events: none;
+    transform: translateX(-50%);
+  }
+
+  .forecast.better { background: #2f7a58; }
+  .forecast.worse { background: #a83c28; }
+  .forecast.here { background: #4a4438; }
+
+  .drop {
+    position: absolute;
+    border: 2px dashed rgba(255, 255, 255, 0.75);
+    border-radius: 2px;
+    pointer-events: auto;
+    opacity: 0;
+    transition: opacity 140ms ease;
+  }
+
+  .drop.armed { opacity: 1; }
+  .drop.target { background: rgba(255, 255, 255, 0.16); }
 
   /* ------------------------------------------------------------- instrumento */
 
@@ -201,123 +292,6 @@
     70%  { opacity: 1; transform: translateY(-0.5em); }
     100% { opacity: 0; transform: translateY(-1.1em); }
   }
-
-  /* -------------------------------------------------------------- o mundo */
-
-  /*
-   * O mundo é uma cena desenhada e tem paleta própria: não segue o tema claro
-   * ou escuro do leitor, tal como uma imagem não segue.
-   */
-  .world {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    overflow: hidden;
-    background: #6f8f5c;
-  }
-
-  .world canvas { display: block; image-rendering: pixelated; }
-
-  .overlay {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-  }
-
-  .overlay > * { pointer-events: auto; }
-
-  /* A tabuleta de cada recinto, encostada ao canto superior da cerca. */
-  .sign {
-    position: absolute;
-    display: flex;
-    align-items: baseline;
-    gap: 0.5em;
-    padding: 0.15em 0.5em;
-    background: #3b2f21;
-    color: #f0e2c8;
-    border: 1px solid #23190f;
-    border-radius: 2px;
-    font-family: var(--data);
-    font-size: 0.62rem;
-    letter-spacing: 0.06em;
-    white-space: nowrap;
-    transform: translateY(-100%);
-  }
-
-  .sign b { font-weight: 600; }
-  .sign span { opacity: 0.7; }
-
-  /*
-   * As fichas são posicionadas em píxeis, não em percentagem: a largura de uma
-   * ficha vem do nome do animal, e um nome comprido num recinto estreito
-   * sobrepunha-se ao vizinho. O guião mede-as e arruma-as por linhas.
-   */
-  .animal {
-    position: absolute;
-    display: flex;
-    align-items: center;
-    gap: 0.35em;
-    padding: 0.2em 0.55em 0.2em 0.3em;
-    background: rgba(252, 250, 244, 0.94);
-    border: 1px solid #3b2f21;
-    border-radius: 999px;
-    font-family: var(--data);
-    font-size: 0.62rem;
-    color: #22271f;
-    cursor: grab;
-    user-select: none;
-    white-space: nowrap;
-    transition: box-shadow 140ms ease, transform 140ms ease;
-  }
-
-  .animal::before {
-    content: "";
-    width: 0.8em;
-    height: 0.8em;
-    border-radius: 50%;
-    background: var(--species);
-    flex: none;
-  }
-
-  .animal:hover { transform: translateY(-1px); }
-  .animal:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
-  .animal.held { opacity: 0.35; cursor: grabbing; }
-  .animal.picked { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #3b2f21; }
-
-  /* Enquanto se segura um animal, cada recinto diz o que a mudança custaria. */
-  .forecast {
-    position: absolute;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.15em 0.5em;
-    border-radius: 2px;
-    font-family: var(--data);
-    font-size: 0.68rem;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    color: #fff;
-    pointer-events: none;
-    transform: translateX(-50%);
-  }
-
-  .forecast.better { background: #2f7a58; }
-  .forecast.worse { background: #a83c28; }
-  .forecast.here { background: #4a4438; }
-
-  .drop {
-    position: absolute;
-    border: 2px dashed rgba(255, 255, 255, 0.75);
-    border-radius: 2px;
-    pointer-events: auto;
-    opacity: 0;
-    transition: opacity 140ms ease;
-  }
-
-  .drop.armed { opacity: 1; }
-  .drop.target { background: rgba(255, 255, 255, 0.14); }
 
   .controls { display: flex; gap: var(--step); align-items: center; flex-wrap: wrap; }
 
@@ -478,6 +452,49 @@
     var CERCA = "#7a5c3a";
     var CERCA_SOMBRA = "#523c25";
 
+    /* --------------------------------------------------------------- bichos */
+
+    /*
+     * O animal, em pixéis: um caractere por pixel, 16 de largo por 12 de alto.
+     *
+     *   o  contorno      b  pelagem
+     *   d  sombra        l  barriga
+     *   e  olho          w  focinho
+     *
+     * A silhueta é a mesma para todos; o que muda é a pelagem. Assim uma
+     * espécie que o jogador venha a inventar nasce logo com aspecto, sem
+     * precisar de um desenho próprio.
+     */
+    var SILHUETA = [
+      "...........ooo..",
+      "..........obbbo.",
+      ".o........obbbbo",
+      ".oo.......obebbo",
+      ".obo.....obbbbwo",
+      "..obooooobbbbbbo",
+      "..oddbbbbbbbbbo.",
+      "..obbbbbbbbbllo.",
+      "..ollllllllllo..",
+      "...dd.dd...dd.dd",
+      "...oo.oo...oo.oo",
+      "................"
+    ];
+
+    var LARGURA_BICHO = 16;
+    var ALTURA_BICHO = 12;
+
+    /*
+     * As pelagens são poucas e escolhidas a dedo, e não geradas por uma volta
+     * ao círculo cromático: um leão verde-limão estragaria a cena. Cada espécie
+     * fica com a seguinte da lista, pela ordem em que aparece.
+     */
+    var PELAGENS = [
+      { o: "#4a3116", d: "#8f6227", b: "#c08a3e", l: "#dcb26b", w: "#f0dcb4", e: "#17120a" },
+      { o: "#1b232a", d: "#36434e", b: "#4e606e", l: "#7d8f9c", w: "#c8d2d8", e: "#0d1115" },
+      { o: "#28331a", d: "#4c612e", b: "#6b8442", l: "#96ab6d", w: "#d6dfbc", e: "#131a0c" },
+      { o: "#4f231a", d: "#8c3f2d", b: "#b45a41", l: "#d28a68", w: "#f1cbb1", e: "#2a120c" }
+    ];
+
     var canvas = document.getElementById("canvas");
     var ctx = canvas.getContext("2d");
     var worldEl = document.getElementById("world");
@@ -492,11 +509,19 @@
     var hotel = null;
     var satisfacao = 0;
     var seleccionado = null;
-    var coresPorEspecie = {};
+    var pelagemDaEspecie = {};
+    var retratos = {};
 
     /** Os recintos em coordenadas de azulejo, e o tamanho do mundo. */
     var mundo = { recintos: {}, largura: 0, altura: 0 };
     var escala = 3;
+
+    /** Onde cada animal está pousado, em píxeis lógicos. */
+    var lugares = {};
+
+    /** O cenário parado — chão e cercas — desenhado uma vez e reaproveitado. */
+    var fundo = document.createElement("canvas");
+    var fundoCtx = fundo.getContext("2d");
 
     var semAnimacao = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -506,13 +531,15 @@
       hotel = Hotel.create();
       satisfacao = hotel.getGlobalSatisfaction();
       seleccionado = null;
-      coresPorEspecie = {};
+      pelagemDaEspecie = {};
+      retratos = {};
 
       animais().forEach(function (animal) {
         var especie = hotel.getSpeciesOf(animal);
-        if (!(especie in coresPorEspecie)) {
-          coresPorEspecie[especie] = "var(--species-" +
-            (Object.keys(coresPorEspecie).length % 4) + ")";
+        if (!(especie in pelagemDaEspecie)) {
+          var indice = Object.keys(pelagemDaEspecie).length % PELAGENS.length;
+          pelagemDaEspecie[especie] = PELAGENS[indice];
+          retratos[especie] = retratar(PELAGENS[indice]);
         }
       });
 
@@ -526,6 +553,25 @@
     function animais() { return hotel.getAnimalIds().split(","); }
     function habitats() { return hotel.getHabitatIds().split(","); }
 
+    /** Pinta a silhueta com uma pelagem, uma vez, para depois só se copiar. */
+    function retratar(pelagem) {
+      var tela = document.createElement("canvas");
+      tela.width = LARGURA_BICHO;
+      tela.height = ALTURA_BICHO;
+      var pincel = tela.getContext("2d");
+
+      SILHUETA.forEach(function (linha, y) {
+        for (var x = 0; x < linha.length; x++) {
+          var cor = pelagem[linha[x]];
+          if (!cor) continue;
+          pincel.fillStyle = cor;
+          pincel.fillRect(x, y, 1, 1);
+        }
+      });
+
+      return tela;
+    }
+
     /* ---------------------------------------------------------- o traçado */
 
     /**
@@ -533,8 +579,7 @@
      *
      * A área do habitat é a mesma grandeza que entra na fórmula da satisfação
      * (área a dividir pela população), pelo que é ela que decide o tamanho do
-     * recinto no ecrã: um recinto grande é mesmo grande, e enchê-lo mostra à
-     * vista o espaço de cada animal a encolher.
+     * recinto no ecrã: um recinto grande é mesmo grande.
      */
     function dimensoes(area) {
       var azulejos = Math.max(6, Math.round(area / 60));
@@ -559,37 +604,58 @@
         maisAlto = Math.max(maisAlto, medida.altura);
       });
 
-      mundo = {
-        recintos: recintos,
-        largura: cursor - 1,
-        altura: 3 + maisAlto + 2
-      };
+      mundo = { recintos: recintos, largura: cursor - 1, altura: 3 + maisAlto + 2 };
+    }
+
+    /**
+     * Espalha os residentes pelo interior do recinto, numa grelha que se aperta
+     * à medida que eles chegam. Amontoar já custa pontos na fórmula; assim
+     * também se vê.
+     */
+    function pousar(id, residentes) {
+      if (!residentes.length) return;
+
+      var recinto = mundo.recintos[id];
+      var largura = recinto.largura * AZULEJO;
+      var altura = recinto.altura * AZULEJO;
+      var colunas = Math.max(1, Math.round(Math.sqrt(residentes.length * largura / altura)));
+      var linhas = Math.ceil(residentes.length / colunas);
+
+      residentes.forEach(function (animal, ordem) {
+        lugares[animal] = {
+          x: recinto.x * AZULEJO + largura * ((ordem % colunas) + 0.5) / colunas,
+          y: recinto.y * AZULEJO + altura * (Math.floor(ordem / colunas) + 0.5) / linhas
+        };
+      });
     }
 
     /** Ajusta o canvas à largura disponível, com escala inteira. */
     function ajustarCanvas() {
-      var disponivel = worldEl.clientWidth;
-      escala = Math.max(2, Math.floor(disponivel / (mundo.largura * AZULEJO)));
+      var densidade = window.devicePixelRatio || 1;
+      escala = Math.max(2, Math.floor(worldEl.clientWidth / (mundo.largura * AZULEJO)));
 
       var largura = mundo.largura * AZULEJO * escala;
       var altura = mundo.altura * AZULEJO * escala;
-      var densidade = window.devicePixelRatio || 1;
 
       canvas.width = Math.round(largura * densidade);
       canvas.height = Math.round(altura * densidade);
       canvas.style.width = largura + "px";
       canvas.style.height = altura + "px";
+
       overlayEl.style.width = largura + "px";
       overlayEl.style.height = altura + "px";
       overlayEl.style.left = "50%";
       overlayEl.style.marginLeft = (-largura / 2) + "px";
 
+      fundo.width = mundo.largura * AZULEJO;
+      fundo.height = mundo.altura * AZULEJO;
+
       ctx.setTransform(densidade * escala, 0, 0, densidade * escala, 0, 0);
       ctx.imageSmoothingEnabled = false;
     }
 
-    /** Converte azulejos em píxeis do ecrã. */
-    function emPixeis(azulejos) { return azulejos * AZULEJO * escala; }
+    /** Converte píxeis lógicos em píxeis do ecrã. */
+    function emPixeis(logicos) { return logicos * escala; }
 
     /* --------------------------------------------------------------- pintar */
 
@@ -600,10 +666,11 @@
       return n % 100;
     }
 
-    function pintarMundo() {
+    /** Desenha o cenário parado. Só muda quando muda a estação ou o traçado. */
+    function pintarFundo() {
       var paleta = PALETAS[hotel.getSeason()];
+      fundoCtx.imageSmoothingEnabled = false;
 
-      // O chão de fora, sob tudo o resto.
       for (var y = 0; y < mundo.altura; y++)
         for (var x = 0; x < mundo.largura; x++)
           pintarAzulejo(x, y, paleta.fora, paleta.detalhe, paleta.enfeite, 92);
@@ -620,24 +687,24 @@
 
     /**
      * Um azulejo de chão: a cor base, umas marcas mais claras sempre nos mesmos
-     * sítios, e de vez em quando um enfeite — uma flor, uma folha, um monte de
-     * neve, conforme a estação.
+     * sítios, e de vez em quando um enfeite — uma flor, uma folha caída, um
+     * monte de neve, conforme a estação.
      */
     function pintarAzulejo(x, y, base, detalhe, enfeite, limiar) {
       var px = x * AZULEJO;
       var py = y * AZULEJO;
       var n = ruido(x, y);
 
-      ctx.fillStyle = base;
-      ctx.fillRect(px, py, AZULEJO, AZULEJO);
+      fundoCtx.fillStyle = base;
+      fundoCtx.fillRect(px, py, AZULEJO, AZULEJO);
 
-      ctx.fillStyle = detalhe;
-      ctx.fillRect(px + (n % 11), py + ((n * 3) % 13), 2, 1);
-      ctx.fillRect(px + ((n * 7) % 12), py + ((n * 5) % 12), 1, 2);
+      fundoCtx.fillStyle = detalhe;
+      fundoCtx.fillRect(px + (n % 11), py + ((n * 3) % 13), 2, 1);
+      fundoCtx.fillRect(px + ((n * 7) % 12), py + ((n * 5) % 12), 1, 2);
 
       if (n >= limiar) {
-        ctx.fillStyle = enfeite;
-        ctx.fillRect(px + ((n * 13) % 12) + 1, py + ((n * 11) % 12) + 1, 2, 2);
+        fundoCtx.fillStyle = enfeite;
+        fundoCtx.fillRect(px + ((n * 13) % 12) + 1, py + ((n * 11) % 12) + 1, 2, 2);
       }
     }
 
@@ -661,22 +728,64 @@
     function pintarCercaHorizontal(x, y) {
       var px = x * AZULEJO;
       var py = y * AZULEJO;
-      ctx.fillStyle = CERCA;
-      ctx.fillRect(px, py + 6, AZULEJO, 2);
-      ctx.fillRect(px, py + 10, AZULEJO, 2);
-      ctx.fillRect(px + 6, py + 3, 3, 11);
-      ctx.fillStyle = CERCA_SOMBRA;
-      ctx.fillRect(px, py + 8, AZULEJO, 1);
-      ctx.fillRect(px + 8, py + 3, 1, 11);
+      fundoCtx.fillStyle = CERCA;
+      fundoCtx.fillRect(px, py + 6, AZULEJO, 2);
+      fundoCtx.fillRect(px, py + 10, AZULEJO, 2);
+      fundoCtx.fillRect(px + 6, py + 3, 3, 11);
+      fundoCtx.fillStyle = CERCA_SOMBRA;
+      fundoCtx.fillRect(px, py + 8, AZULEJO, 1);
+      fundoCtx.fillRect(px + 8, py + 3, 1, 11);
     }
 
     function pintarCercaVertical(x, y) {
       var px = x * AZULEJO;
       var py = y * AZULEJO;
-      ctx.fillStyle = CERCA;
-      ctx.fillRect(px + 6, py, 3, AZULEJO);
-      ctx.fillStyle = CERCA_SOMBRA;
-      ctx.fillRect(px + 8, py, 1, AZULEJO);
+      fundoCtx.fillStyle = CERCA;
+      fundoCtx.fillRect(px + 6, py, 3, AZULEJO);
+      fundoCtx.fillStyle = CERCA_SOMBRA;
+      fundoCtx.fillRect(px + 8, py, 1, AZULEJO);
+    }
+
+    /**
+     * Um quadro: o cenário parado, copiado de uma vez, e os bichos por cima.
+     *
+     * O balanço é o que os faz parecer vivos — cada um sobe e desce um pixel,
+     * fora de compasso com os outros, para não parecerem um exército.
+     */
+    function pintarQuadro(instante) {
+      ctx.drawImage(fundo, 0, 0);
+
+      animais().forEach(function (animal, ordem) {
+        var lugar = lugares[animal];
+        if (!lugar) return;
+
+        var retrato = retratos[hotel.getSpeciesOf(animal)];
+        var balanco = semAnimacao
+          ? 0
+          : Math.round(Math.sin(instante / 420 + ordem * 1.7)) === 1 ? -1 : 0;
+
+        var x = Math.round(lugar.x - LARGURA_BICHO / 2);
+        var y = Math.round(lugar.y - ALTURA_BICHO / 2) + balanco;
+
+        // A sombra assenta o bicho no chão em vez de o deixar a flutuar.
+        ctx.fillStyle = "rgba(30, 34, 24, 0.22)";
+        ctx.fillRect(x + 3, y + ALTURA_BICHO - 1, LARGURA_BICHO - 6, 2);
+
+        ctx.drawImage(retrato, x, y);
+
+        if (seleccionado === animal) {
+          ctx.strokeStyle = "#fff";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x - 1.5, y - 1.5, LARGURA_BICHO + 3, ALTURA_BICHO + 3);
+        }
+      });
+    }
+
+    var relogio = null;
+
+    function animar(instante) {
+      pintarQuadro(instante);
+      relogio = window.requestAnimationFrame(animar);
     }
 
     /* ------------------------------------------------------ o que está por cima */
@@ -688,7 +797,7 @@
       scoreEl.firstChild.nodeValue = String(satisfacao);
 
       ajustarCanvas();
-      pintarMundo();
+      pintarFundo();
 
       var porRecinto = {};
       habitats().forEach(function (id) { porRecinto[id] = []; });
@@ -700,10 +809,16 @@
       habitats().forEach(function (id) {
         overlayEl.appendChild(tabuleta(id));
         overlayEl.appendChild(zonaDeLargada(id));
-        arrumar(id, porRecinto[id]);
+        pousar(id, porRecinto[id]);
+      });
+
+      animais().forEach(function (animal) {
+        overlayEl.appendChild(alvo(animal));
       });
 
       preverParaTodos(seleccionado);
+
+      if (!relogio) relogio = window.requestAnimationFrame(animar);
     }
 
     /** A tabuleta com o nome e a área, encostada ao canto de cima do recinto. */
@@ -711,8 +826,8 @@
       var recinto = mundo.recintos[id];
       var placa = document.createElement("div");
       placa.className = "sign";
-      placa.style.left = emPixeis(recinto.x - 1) + "px";
-      placa.style.top = emPixeis(recinto.y - 1) + "px";
+      placa.style.left = emPixeis((recinto.x - 1) * AZULEJO) + "px";
+      placa.style.top = emPixeis((recinto.y - 1) * AZULEJO) + "px";
 
       var nome = document.createElement("b");
       nome.textContent = hotel.getHabitatName(id);
@@ -729,10 +844,10 @@
       var zona = document.createElement("div");
       zona.className = "drop";
       zona.dataset.habitat = id;
-      zona.style.left = emPixeis(recinto.x) + "px";
-      zona.style.top = emPixeis(recinto.y) + "px";
-      zona.style.width = emPixeis(recinto.largura) + "px";
-      zona.style.height = emPixeis(recinto.altura) + "px";
+      zona.style.left = emPixeis(recinto.x * AZULEJO) + "px";
+      zona.style.top = emPixeis(recinto.y * AZULEJO) + "px";
+      zona.style.width = emPixeis(recinto.largura * AZULEJO) + "px";
+      zona.style.height = emPixeis(recinto.altura * AZULEJO) + "px";
 
       zona.addEventListener("click", function () {
         if (seleccionado) mover(seleccionado, id);
@@ -751,78 +866,48 @@
       return zona;
     }
 
-    /* Medidas do arrumo das fichas dentro de um recinto, em píxeis. */
-    var MARGEM = 4;
-    var ESPACO = 4;
-
     /**
-     * Arruma as fichas dentro do recinto, por linhas, medindo-as.
-     *
-     * O domínio não sabe onde as coisas estão — um habitat tem área, que é um
-     * número, e nada mais. As posições são matéria da interface. Uma ficha só
-     * passa para a linha seguinte quando deixa de caber, pelo que nomes
-     * compridos em recintos estreitos não se sobrepõem.
+     * A área que responde ao rato e ao teclado, por cima do bicho desenhado, e
+     * a chapa com o nome por baixo dele.
      */
-    function arrumar(id, residentes) {
-      if (!residentes.length) return;
+    function alvo(animal) {
+      var lugar = lugares[animal];
+      var botao = document.createElement("button");
+      botao.type = "button";
+      botao.draggable = true;
+      botao.className = "animal" + (seleccionado === animal ? " picked" : "");
+      botao.dataset.animal = animal;
+      botao.setAttribute("aria-label", hotel.getAnimalName(animal) +
+        ", em " + hotel.getHabitatName(hotel.getHabitatOf(animal)));
+      botao.style.left = emPixeis(lugar.x) + "px";
+      botao.style.top = emPixeis(lugar.y) + "px";
+      botao.style.width = emPixeis(LARGURA_BICHO) + "px";
+      botao.style.height = emPixeis(ALTURA_BICHO) + "px";
 
-      var recinto = mundo.recintos[id];
-      var esquerda = emPixeis(recinto.x) + MARGEM;
-      var topo = emPixeis(recinto.y) + MARGEM;
-      var disponivel = emPixeis(recinto.largura) - 2 * MARGEM;
+      var chapa = document.createElement("span");
+      chapa.className = "plate";
+      chapa.textContent = hotel.getAnimalName(animal);
+      botao.appendChild(chapa);
 
-      var x = 0;
-      var y = 0;
-      var alturaDaLinha = 0;
-
-      residentes.forEach(function (animal) {
-        var ficha = desenharAnimal(animal);
-        overlayEl.appendChild(ficha);
-
-        var largura = ficha.offsetWidth;
-        if (x > 0 && x + largura > disponivel) {
-          y += alturaDaLinha + ESPACO;
-          x = 0;
-          alturaDaLinha = 0;
-        }
-
-        ficha.style.left = (esquerda + x) + "px";
-        ficha.style.top = (topo + y) + "px";
-
-        x += largura + ESPACO;
-        alturaDaLinha = Math.max(alturaDaLinha, ficha.offsetHeight);
-      });
-    }
-
-    function desenharAnimal(animal) {
-      var ficha = document.createElement("button");
-      ficha.type = "button";
-      ficha.draggable = true;
-      ficha.className = "animal" + (seleccionado === animal ? " picked" : "");
-      ficha.dataset.animal = animal;
-      ficha.title = hotel.getAnimalName(animal);
-      ficha.textContent = hotel.getAnimalName(animal);
-      ficha.style.setProperty("--species", coresPorEspecie[hotel.getSpeciesOf(animal)]);
-
-      ficha.addEventListener("click", function (evento) {
+      botao.addEventListener("click", function (evento) {
         evento.stopPropagation();
         seleccionado = seleccionado === animal ? null : animal;
         desenhar();
         aconselhar();
       });
 
-      ficha.addEventListener("dragstart", function (evento) {
+      botao.addEventListener("dragstart", function (evento) {
         evento.dataTransfer.setData("text/plain", animal);
         evento.dataTransfer.effectAllowed = "move";
-        ficha.classList.add("held");
+        botao.classList.add("held");
         preverParaTodos(animal);
       });
-      ficha.addEventListener("dragend", function () {
-        ficha.classList.remove("held");
+      botao.addEventListener("dragend", function () {
+        botao.classList.remove("held");
         preverParaTodos(seleccionado);
       });
 
-      return ficha;
+      return botao;
     }
 
     /**
@@ -844,8 +929,8 @@
         var recinto = mundo.recintos[id];
         var etiqueta = document.createElement("div");
         etiqueta.className = "forecast";
-        etiqueta.style.left = emPixeis(recinto.x + recinto.largura / 2) + "px";
-        etiqueta.style.top = (emPixeis(recinto.y + recinto.altura) + 4) + "px";
+        etiqueta.style.left = emPixeis((recinto.x + recinto.largura / 2) * AZULEJO) + "px";
+        etiqueta.style.top = (emPixeis((recinto.y + recinto.altura) * AZULEJO) + 6) + "px";
 
         if (hotel.getHabitatOf(animal) === id) {
           etiqueta.classList.add("here");
@@ -888,34 +973,9 @@
     function assentar() {
       var antes = satisfacao;
       satisfacao = hotel.getGlobalSatisfaction();
-      comDeslize(desenhar);
+      desenhar();
       aconselhar();
       mostrarDiferenca(satisfacao - antes);
-    }
-
-    /** Faz as fichas deslizarem das posições antigas para as novas. */
-    function comDeslize(alterar) {
-      if (semAnimacao) { alterar(); return; }
-
-      var antes = {};
-      overlayEl.querySelectorAll(".animal").forEach(function (ficha) {
-        antes[ficha.dataset.animal] = ficha.getBoundingClientRect();
-      });
-
-      alterar();
-
-      overlayEl.querySelectorAll(".animal").forEach(function (ficha) {
-        var origem = antes[ficha.dataset.animal];
-        if (!origem) return;
-        var destino = ficha.getBoundingClientRect();
-        var dx = origem.left - destino.left;
-        var dy = origem.top - destino.top;
-        if (!dx && !dy) return;
-        ficha.animate(
-          [{ transform: "translate(" + dx + "px," + dy + "px)" }, { transform: "none" }],
-          { duration: 460, easing: "cubic-bezier(.22,.61,.36,1)" }
-        );
-      });
     }
 
     function mostrarDiferenca(variacao) {
